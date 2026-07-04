@@ -47,7 +47,13 @@ jobs:
           EXCEL_SOURCE_URL: ${{ secrets.EXCEL_SOURCE_URL }}
         run: |
           mkdir -p data
-          curl -fL --retry 3 --max-time 60 -o data/team-data.xlsx.tmp "$EXCEL_SOURCE_URL"
+          http_code=$(curl -sSL --retry 3 --max-time 60 -w '%{http_code}' -o data/team-data.xlsx.tmp "$EXCEL_SOURCE_URL")
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Download failed with HTTP status $http_code. The link may be private (not set to \"Anyone with the link\"), expired, or not a direct-download URL — a share link that requires sign-in returns an error/login page here since this runs unauthenticated, same as a browser in a private window. Response body (first 500 bytes):"
+            head -c 500 data/team-data.xlsx.tmp
+            echo
+            exit 1
+          fi
 
       - name: Validate it's really an xlsx (zip signature), not an HTML login page
         if: steps.check.outputs.configured == 'true'
