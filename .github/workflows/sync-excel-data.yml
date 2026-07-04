@@ -1,0 +1,63 @@
+name: Sync Excel data snapshot
+
+# Downloads the shared Excel workbook server-side (no browser CORS restrictions
+# apply here) and commits it into the repo at data/team-data.xlsx. The dashboard
+# then loads that same-origin file via "Load latest snapshot" in the Data source
+# modal, which sidesteps CORS entirely since it's served from this same site.
+#
+# One-time setup:
+#   1. Get a direct-download link to your shared Excel Online / OneDrive /
+#      SharePoint workbook (a normal "Copy link" opens the web viewer, not the
+#      file — append &download=1, or use Share -> "Copy" on a link set to
+#      "Anyone with the link", then swap the trailing view action for download).
+#   2. Repo Settings -> Secrets and variables -> Actions -> New repository
+#      secret named EXCEL_SOURCE_URL with that link as the value.
+#   3. Run this workflow once manually (Actions tab -> Sync Excel data snapshot
+#      -> Run workflow) to create the first snapshot, or wait for the schedule.
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # hourly; adjust to taste
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download workbook
+        env:
+          EXCEL_SOURCE_URL: ${{ secrets.EXCEL_SOURCE_URL }}
+        run: |
+          if [ -z "$EXCEL_SOURCE_URL" ]; then
+            echo "::error::EXCEL_SOURCE_URL repo secret is not set. See the setup steps in this workflow file."
+            exit 1
+          fi
+          mkdir -p data
+          curl -fL --retry 3 --max-time 60 -o data/team-data.xlsx.tmp "$EXCEL_SOURCE_URL"
+
+      - name: Validate it's really an xlsx (zip signature), not an HTML login page
+        run: |
+          sig=$(head -c 2 data/team-data.xlsx.tmp | od -An -tx1 | tr -d ' \n')
+          if [ "$sig" != "504b" ]; then
+            echo "::error::Downloaded file doesn't look like an .xlsx (missing PK zip signature). The share link may have expired, require sign-in, or point at the web viewer instead of the raw file."
+            head -c 300 data/team-data.xlsx.tmp
+            exit 1
+          fi
+          mv data/team-data.xlsx.tmp data/team-data.xlsx
+
+      - name: Commit snapshot if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/team-data.xlsx
+          if git diff --cached --quiet; then
+            echo "No changes to snapshot."
+          else
+            git commit -m "Update Excel data snapshot"
+            git push
+          fi
