@@ -517,8 +517,8 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
     </div>
     <div style="margin-bottom:18px">
       <div class="d-section-title">Sync from cloud URL</div>
-      <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Fetches a JSON, CSV, or Excel (.xlsx) file hosted at a URL — a published Google Sheet export, a direct-download link to an Excel Online / OneDrive / SharePoint workbook, or your own API. Requires this page to be hosted where outbound network requests are allowed — it will not work from inside a Claude Artifact preview.</div>
-      <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Excel Online tip: a normal "Copy link" opens the web viewer, not the file. Use OneDrive/SharePoint's direct-download link instead (append <code>&amp;download=1</code>, or use Share → "Copy" on a file set to "Anyone with the link", then swap the trailing action for a download).</div>
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Fetches a JSON, CSV, or Excel (.xlsx) file hosted at a URL. The browser blocks this unless the host sends CORS headers allowing it — a published Google Sheet export usually works; a raw file on GitHub (raw.githubusercontent.com) works too. It will not work from inside a Claude Artifact preview or when this page is opened via a local file:// path.</div>
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Excel Online / OneDrive / SharePoint links almost always fail here even as a "direct-download" link — Microsoft's file hosts don't send the CORS header browsers require for cross-origin fetch. Use <b>Upload from file</b> above instead: download the workbook once, then upload it locally — that always works regardless of CORS.</div>
       <div style="display:flex;gap:8px">
         <input type="text" id="data-url-input" placeholder="https://example.com/team-data.xlsx" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px">
         <button class="btn btn-accent" onclick="syncFromUrl()">Sync</button>
@@ -1025,7 +1025,11 @@ async function syncFromUrl(){
     const data = isXLSX ? parseXLSXData(await res.arrayBuffer()) : (isJSON ? parseJSONData(await res.text()) : parseCSVData(await res.text()));
     applyLoadedData(data, url);
   }catch(err){
-    showDataStatus('Cloud sync failed — this preview environment blocks outbound network requests, so cloud sync only works once this page is hosted elsewhere (e.g. your own web host), not from inside a Claude Artifact. ('+err.message+')', false);
+    if(err instanceof TypeError){
+      showDataStatus('Cloud sync failed: the browser blocked the request. This almost always means the host doesn\'t send the CORS header cross-origin fetch requires — common for OneDrive/SharePoint/Excel Online links — or that this page is running from a local file:// path or a Claude Artifact preview. Use "Upload from file" instead; it works regardless of CORS. ('+err.message+')', false);
+    } else {
+      showDataStatus('Cloud sync failed: '+err.message, false);
+    }
   }
 }
 
