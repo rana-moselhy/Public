@@ -29,18 +29,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download workbook
+      - name: Check secret is configured
+        id: check
         env:
           EXCEL_SOURCE_URL: ${{ secrets.EXCEL_SOURCE_URL }}
         run: |
           if [ -z "$EXCEL_SOURCE_URL" ]; then
-            echo "::error::EXCEL_SOURCE_URL repo secret is not set. See the setup steps in this workflow file."
-            exit 1
+            echo "::warning::EXCEL_SOURCE_URL repo secret is not set yet — skipping this run. See the setup steps at the top of this workflow file."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Download workbook
+        if: steps.check.outputs.configured == 'true'
+        env:
+          EXCEL_SOURCE_URL: ${{ secrets.EXCEL_SOURCE_URL }}
+        run: |
           mkdir -p data
           curl -fL --retry 3 --max-time 60 -o data/team-data.xlsx.tmp "$EXCEL_SOURCE_URL"
 
       - name: Validate it's really an xlsx (zip signature), not an HTML login page
+        if: steps.check.outputs.configured == 'true'
         run: |
           sig=$(head -c 2 data/team-data.xlsx.tmp | od -An -tx1 | tr -d ' \n')
           if [ "$sig" != "504b" ]; then
@@ -51,6 +61,7 @@ jobs:
           mv data/team-data.xlsx.tmp data/team-data.xlsx
 
       - name: Commit snapshot if changed
+        if: steps.check.outputs.configured == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
