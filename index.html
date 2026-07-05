@@ -539,7 +539,11 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
 </script>
 
 <script>
-const BASE_LEVELS = {j1:"Junior 1",j2:"Junior 2",s1:"Senior 1",s2:"Senior 2",ae:"Associate Expert"};
+const DEFAULT_LEVELS = {j1:"Junior 1",j2:"Junior 2",s1:"Senior 1",s2:"Senior 2",ae:"Associate Expert"};
+// Overridable by a "Levels" lookup sheet in an uploaded workbook (see
+// applyLevelsLookup/parseLevelsLookupSheet) — falls back to the defaults
+// above when no such sheet is present.
+let BASE_LEVELS = {...DEFAULT_LEVELS};
 // LEVELS starts as the five known levels but is refreshed from whatever's
 // actually in `raw` (see refreshLevels), so any custom level value coming
 // from an uploaded file gets a real label everywhere LEVELS is looked up,
@@ -933,8 +937,38 @@ function toggleTheme(){
 })();
 
 // ── DATA SOURCE ──
-const REV_LEVELS = Object.fromEntries(Object.entries(BASE_LEVELS).map(([k,v])=>[v,k]));
+let REV_LEVELS = Object.fromEntries(Object.entries(BASE_LEVELS).map(([k,v])=>[v,k]));
 const REV_STATUS = Object.fromEntries(Object.entries(STATUS).map(([k,v])=>[v,k]));
+
+// Replaces BASE_LEVELS/REV_LEVELS with a code->label map read from an
+// uploaded workbook's "Levels" lookup sheet, so the code<->label mapping
+// used to interpret/export the Level column is driven by the file rather
+// than hardcoded, for datasets that use a different level taxonomy.
+function applyLevelsLookup(map){
+  BASE_LEVELS = Object.keys(map).length ? map : {...DEFAULT_LEVELS};
+  REV_LEVELS = Object.fromEntries(Object.entries(BASE_LEVELS).map(([k,v])=>[v,k]));
+}
+
+// Looks for a sheet named "Levels" (case-insensitive) with "Level"/"Name"
+// columns and returns a {code:label} map, or null if no such sheet exists.
+function parseLevelsLookupSheet(wb){
+  const sheetName = wb.SheetNames.find(n=>n.trim().toLowerCase()==='levels');
+  if(!sheetName) return null;
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, raw:true, defval:''})
+    .filter(r=>r.some(c=>c!==''&&c!=null));
+  if(rows.length<2) return null;
+  const headers = rows[0].map(h=>String(h).trim().toLowerCase());
+  const iCode = headers.indexOf('level');
+  const iLabel = headers.indexOf('name');
+  if(iCode<0 || iLabel<0) return null;
+  const map={};
+  rows.slice(1).forEach(cols=>{
+    const code=String(cols[iCode]??'').trim();
+    const label=String(cols[iLabel]??'').trim();
+    if(code && label) map[code]=label;
+  });
+  return Object.keys(map).length ? map : null;
+}
 
 function openDataModal(){
   document.getElementById('data-overlay').classList.add('open');
@@ -988,7 +1022,7 @@ function rowsToMembers(headers, rows){
     return {
       id:Number(cols[iId]),
       name:cols[iName],
-      level:REV_LEVELS[levelLabel]||levelLabel.toLowerCase(),
+      level:REV_LEVELS[levelLabel] || (BASE_LEVELS[levelLabel]!==undefined ? levelLabel : levelLabel.toLowerCase()),
       project:String(cols[iProject]||'').replace(/^Project\s+/,''),
       lead:num(cols[iLead]), srjr:num(cols[iSrjr]), kpi:num(cols[iKpi]), final:num(cols[iFinal]),
       tenure:num(cols[iTenure])||0,
@@ -1000,6 +1034,7 @@ function rowsToMembers(headers, rows){
 }
 
 function parseCSVData(text){
+  applyLevelsLookup({}); // CSV has no lookup sheet concept; don't leak a prior XLSX's custom levels
   const lines=text.split(/\r?\n/).filter(l=>l.trim().length);
   if(lines.length<2) throw new Error('CSV has no data rows');
   const headers=parseCSVLine(lines[0]).map(h=>h.trim());
@@ -1119,7 +1154,10 @@ function parseFormsExport(headers, rows){
 
 function parseXLSXData(buf){
   const wb=XLSX.read(buf,{type:'array'});
-  const ws=wb.Sheets[wb.SheetNames[0]];
+  const levelsLookup=parseLevelsLookupSheet(wb);
+  applyLevelsLookup(levelsLookup||{});
+  const mainSheetName=wb.SheetNames.find(n=>n.trim().toLowerCase()!=='levels') || wb.SheetNames[0];
+  const ws=wb.Sheets[mainSheetName];
   const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''}).filter(r=>r.some(c=>c!==''&&c!=null));
   if(rows.length<2) throw new Error('Sheet has no data rows');
   const headers=rows[0].map(h=>String(h).trim());
@@ -1128,6 +1166,7 @@ function parseXLSXData(buf){
 }
 
 function parseJSONData(text){
+  applyLevelsLookup({}); // JSON has no lookup sheet concept; don't leak a prior XLSX's custom levels
   const data=JSON.parse(text);
   if(!Array.isArray(data)) throw new Error('JSON must be an array of member records');
   return data.map(m=>({
