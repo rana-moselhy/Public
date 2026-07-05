@@ -304,7 +304,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
 
   <div class="sidebar-footer">
     Software Testing Team<br>Total: 60 members · Q4 2025
-    <div style="margin-top:6px;opacity:.7">EvalDash v1.2 · Updated 2026-07-03</div>
+    <div style="margin-top:6px;opacity:.7" id="sidebar-updated">EvalDash v1.2 · Updated —</div>
   </div>
 </aside>
 
@@ -422,6 +422,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
               <th onclick="sortBy('project')">Project</th>
               <th onclick="sortBy('final')">Final score <span class="sort-icon">↕</span></th>
               <th>Status</th>
+              <th onclick="sortBy('updatedAt')">Last updated <span class="sort-icon">↕</span></th>
               <th>Action</th>
             </tr>
           </thead>
@@ -538,6 +539,26 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
 
 <script>
 const LEVELS = {j1:"Junior 1",j2:"Junior 2",s1:"Senior 1",s2:"Senior 2",ae:"Associate Expert"};
+// Falls back to the raw level value from the uploaded file (title-cased) for
+// custom levels that aren't one of the five known keys above, instead of
+// hiding them behind a blank/dash.
+function levelLabel(level){
+  if(!level) return '—';
+  return LEVELS[level] || (level.charAt(0).toUpperCase()+level.slice(1));
+}
+// Normalizes an Excel date serial (e.g. Forms' "Completion time" column) or a
+// plain date string into a "YYYY-MM-DD" string, or null if unparseable.
+function normalizeDateValue(v){
+  if(v===undefined||v===null||v==='') return null;
+  if(typeof v==='number' || /^\d+(\.\d+)?$/.test(String(v).trim())){
+    const serial=Number(v);
+    const ms=Math.round((serial-25569)*86400*1000);
+    const d=new Date(ms);
+    return isNaN(d.getTime()) ? null : d.toISOString().slice(0,10);
+  }
+  const d=new Date(v);
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0,10);
+}
 const STATUS = {prom:"Exceed",exc:"High performer",meet:"On track",imp:"Needs improvement",pip:"PDP required",pen:"Pending"};
 const PILL_CLS = {prom:"p-prom",exc:"p-exc",meet:"p-meet",imp:"p-imp",pip:"p-pip",pen:"p-pen"};
 const SR_CLS   = {prom:"sr-prom",exc:"sr-exc",meet:"sr-meet",imp:"sr-imp",pip:"sr-pip",pen:"sr-pen"};
@@ -602,10 +623,13 @@ let raw = [
 ];
 const SAMPLE_DATA = JSON.parse(JSON.stringify(raw));
 const PERSISTED_DATA_KEY = 'evaldash-last-data';
+const LAST_LOADED_KEY = 'evaldash-last-loaded-date';
+let lastLoadedDate = null;
 (function restorePersistedData(){
   try{
     const saved = localStorage.getItem(PERSISTED_DATA_KEY);
     if(saved){ const parsed = JSON.parse(saved); if(Array.isArray(parsed) && parsed.length) raw = parsed; }
+    lastLoadedDate = localStorage.getItem(LAST_LOADED_KEY);
   }catch(e){}
 })();
 
@@ -627,9 +651,9 @@ function getTableData(){
   if(currentMFilter!=='all') data = data.filter(m=>m.status===currentMFilter);
   data = [...data].sort((a,b)=>{
     const av = a[currentSort.key], bv = b[currentSort.key];
-    if(av===null && bv===null) return 0;
-    if(av===null) return 1;
-    if(bv===null) return -1;
+    if(av==null && bv==null) return 0;
+    if(av==null) return 1;
+    if(bv==null) return -1;
     if(typeof av==='string') return av.localeCompare(bv)*currentSort.dir;
     return (av-bv)*currentSort.dir;
   });
@@ -645,7 +669,7 @@ function calcStats(data){
 function setLevel(level){
   currentLevel=level;
   currentMFilter='all';
-  const label = level==='all'?'All levels':(level==='pen'?'Pending':(level==='__unspecified'?'Unspecified':(LEVELS[level]||(level.charAt(0).toUpperCase()+level.slice(1)))));
+  const label = level==='all'?'All levels':(level==='pen'?'Pending':(level==='__unspecified'?'Unspecified':levelLabel(level)));
   document.getElementById('page-sub').textContent=label+' · Click any card or row for details';
   document.querySelectorAll('.fpill')[0].click();
   render();
@@ -708,6 +732,19 @@ function render(){
   renderAreaBars(data);
   renderTable();
   renderLevelSidebar();
+  renderSidebarFooter();
+}
+
+// The footer's "Updated" date reflects the most recent per-member evaluation
+// date (from a Forms import's Completion time) across everyone loaded, so it
+// stays accurate for every viewer instead of a frozen build-time string. Falls
+// back to when this browser last loaded/synced data if no member has a date.
+function renderSidebarFooter(){
+  const el=document.getElementById('sidebar-updated');
+  if(!el) return;
+  const memberDates=raw.map(m=>m.updatedAt).filter(Boolean).sort();
+  const displayDate=memberDates.length ? memberDates[memberDates.length-1] : (lastLoadedDate||'—');
+  el.textContent=`EvalDash v1.2 · Updated ${displayDate}`;
 }
 
 // Builds the sidebar Levels list from whatever level values are actually
@@ -726,7 +763,7 @@ function renderLevelSidebar(){
   const tab=(key,label,count)=>`<button class="ltab${currentLevel===key?' active':''}" onclick="setLevel('${esc(key)}',this)" data-level="${key}">${label} <span class="badge" id="cnt-${key}">${count}</span></button>`;
 
   let html=tab('all','All levels',raw.length);
-  html+=[...known,...custom].map(l=>tab(l, LEVELS[l]||(l.charAt(0).toUpperCase()+l.slice(1)), raw.filter(m=>m.level===l).length)).join('');
+  html+=[...known,...custom].map(l=>tab(l, levelLabel(l), raw.filter(m=>m.level===l).length)).join('');
   if(unspecifiedCount>0) html+=tab('__unspecified','Unspecified',unspecifiedCount);
   html+=tab('pen','Pending',penCount);
   container.innerHTML=html;
@@ -789,7 +826,7 @@ function renderTable(){
   const data=getTableData();
   const tbody=document.getElementById('mtbody');
   if(!data.length){
-    tbody.innerHTML='<tr><td colspan="7" class="empty">No members match this filter.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="8" class="empty">No members match this filter.</td></tr>';
   } else {
     tbody.innerHTML=data.map(m=>{
       const p=PILL_CLS[m.status]||'p-pen';
@@ -798,10 +835,11 @@ function renderTable(){
       return `<tr onclick="openDetail(${m.id})" title="Click to view ${m.name}'s full breakdown">
         <td style="color:var(--text-3);font-family:var(--mono)">${m.id}</td>
         <td style="font-weight:500">${m.name}</td>
-        <td style="color:var(--text-2)">${LEVELS[m.level]||'—'}</td>
+        <td style="color:var(--text-2)">${levelLabel(m.level)}</td>
         <td style="color:var(--text-3)">Project ${m.project}</td>
         <td style="text-align:center"><div class="score-ring ${sr}">${fs}</div></td>
         <td><span class="pill ${p}">${STATUS[m.status]}</span></td>
+        <td style="color:var(--text-3);font-family:var(--mono)">${m.updatedAt||'—'}</td>
         <td><button class="action-btn" onclick="event.stopPropagation();openDetail(${m.id})">View →</button></td>
       </tr>`;
     }).join('');
@@ -817,7 +855,7 @@ function openDetail(id){
   av.textContent=initials;
   av.style.background=AVATAR_BG[m.level]||'#5b6af5';
   document.getElementById('d-name').textContent=m.name;
-  document.getElementById('d-meta').textContent=`${LEVELS[m.level]||'—'} · Project ${m.project} · Tenure: ${m.tenure} months`;
+  document.getElementById('d-meta').textContent=`${levelLabel(m.level)} · Project ${m.project} · Tenure: ${m.tenure} months · Last evaluated: ${m.updatedAt||'—'}`;
   const pill=document.getElementById('d-pill');
   pill.className='pill '+(PILL_CLS[m.status]||'p-pen');
   pill.textContent=STATUS[m.status];
@@ -850,8 +888,8 @@ function closeDetail(){
 
 function exportCSV(){
   const data=getTableData();
-  const headers=['ID','Name','Level','Project','Lead Eval','SrJr Eval','KPI Avg','Final Score','Status','Tenure (months)'];
-  const rows=data.map(m=>[m.id,m.name,LEVELS[m.level]||'','Project '+m.project,m.lead??'',m.srjr??'',m.kpi??'',m.final??'',STATUS[m.status],m.tenure]);
+  const headers=['ID','Name','Level','Project','Lead Eval','SrJr Eval','KPI Avg','Final Score','Status','Tenure (months)','Last Updated'];
+  const rows=data.map(m=>[m.id,m.name,levelLabel(m.level),'Project '+m.project,m.lead??'',m.srjr??'',m.kpi??'',m.final??'',STATUS[m.status],m.tenure,m.updatedAt??'']);
   const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
@@ -924,7 +962,7 @@ function rowsToMembers(headers, rows){
   const idxAny=(...names)=>{ for(const n of names){ const i=idx(n); if(i>=0) return i; } return -1; };
   const iId=idx('ID'), iName=idx('Name'), iLevel=idxAny('Level','Levels'), iProject=idx('Project'),
         iLead=idx('Lead Eval'), iSrjr=idx('SrJr Eval'), iKpi=idx('KPI Avg'), iFinal=idx('Final Score'),
-        iStatus=idx('Status'), iTenure=idx('Tenure (months)');
+        iStatus=idx('Status'), iTenure=idx('Tenure (months)'), iUpdated=idxAny('Last Updated','Updated');
   if(iId<0||iName<0){
     const missing=[iId<0&&'ID',iName<0&&'Name'].filter(Boolean).join(', ');
     throw new Error(`Data must include ${missing} column(s). Found columns: ${headers.join(', ')||'(none)'}`);
@@ -941,6 +979,7 @@ function rowsToMembers(headers, rows){
       lead:num(cols[iLead]), srjr:num(cols[iSrjr]), kpi:num(cols[iKpi]), final:num(cols[iFinal]),
       tenure:num(cols[iTenure])||0,
       status:REV_STATUS[statusLabel]||statusLabel.toLowerCase()||'pen',
+      updatedAt: iUpdated>=0 ? normalizeDateValue(cols[iUpdated]) : null,
       leadC:[], srjrC:[]
     };
   });
@@ -966,6 +1005,8 @@ function parseCSVData(text){
 // keyword rather than exact question text since Forms truncates long question text
 // and appends "2"/"3" suffixes to duplicate branch columns.
 const FORMS_TESTER_NAME_COLS=[7,8,9,10];
+const FORMS_START_TIME_COL=1;
+const FORMS_COMPLETION_TIME_COL=2;
 const FORMS_PROJECT_COL=6;
 const FORMS_LEVEL_TEXT_COL=11;
 const FORMS_EVAL_TYPE_A_COL=13;
@@ -1012,7 +1053,7 @@ function parseFormsExport(headers, rows){
   const people=new Map();
   const getPerson=name=>{
     if(!people.has(name)) people.set(name,{
-      project:'', level:'', srjrRowAvgs:[], leadRowAvgs:[],
+      project:'', level:'', srjrRowAvgs:[], leadRowAvgs:[], updatedAt:null,
       srjrCat:FORMS_BLOCK_A_CATS.map(()=>({sum:0,count:0})),
       leadCat:FORMS_BLOCK_B_CATS.map(()=>({sum:0,count:0})),
     });
@@ -1025,6 +1066,8 @@ function parseFormsExport(headers, rows){
     const project=row[FORMS_PROJECT_COL];
     if(project && !p.project) p.project=String(project).trim();
     if(!p.level){ const lvl=formsParseLevel(row[FORMS_LEVEL_TEXT_COL]); if(lvl) p.level=lvl; }
+    const rowDate=normalizeDateValue(row[FORMS_COMPLETION_TIME_COL]) || normalizeDateValue(row[FORMS_START_TIME_COL]);
+    if(rowDate && (!p.updatedAt || rowDate>p.updatedAt)) p.updatedAt=rowDate;
 
     if(row[FORMS_EVAL_TYPE_A_COL]!=null && String(row[FORMS_EVAL_TYPE_A_COL]).trim()!==''){
       const rowVals=[];
@@ -1053,7 +1096,7 @@ function parseFormsExport(headers, rows){
     const status = final==null?'pen': final>=4.6?'prom': final>=3.8?'exc': final>=3.0?'meet': final>=2.5?'imp':'pip';
     return {
       id:nextId++, name, level:p.level, project:p.project,
-      lead, srjr, kpi:null, final, tenure:0, status,
+      lead, srjr, kpi:null, final, tenure:0, status, updatedAt:p.updatedAt,
       leadC:p.leadRowAvgs.length?p.leadCat.map(c=>c.count?c.sum/c.count:0):[],
       srjrC:p.srjrRowAvgs.length?p.srjrCat.map(c=>c.count?c.sum/c.count:0):[],
     };
@@ -1076,7 +1119,7 @@ function parseJSONData(text){
   return data.map(m=>({
     id:m.id, name:m.name, level:m.level, project:m.project,
     lead:m.lead??null, srjr:m.srjr??null, kpi:m.kpi??null, final:m.final??null,
-    tenure:m.tenure??0, status:m.status||'pen',
+    tenure:m.tenure??0, status:m.status||'pen', updatedAt:m.updatedAt??null,
     leadC:Array.isArray(m.leadC)?m.leadC:[], srjrC:Array.isArray(m.srjrC)?m.srjrC:[]
   }));
 }
@@ -1084,7 +1127,11 @@ function parseJSONData(text){
 function applyLoadedData(newData, sourceLabel){
   if(!newData.length) throw new Error('No records found');
   raw = newData;
-  try{ localStorage.setItem(PERSISTED_DATA_KEY, JSON.stringify(newData)); }catch(e){}
+  lastLoadedDate = new Date().toISOString().slice(0,10);
+  try{
+    localStorage.setItem(PERSISTED_DATA_KEY, JSON.stringify(newData));
+    localStorage.setItem(LAST_LOADED_KEY, lastLoadedDate);
+  }catch(e){}
   currentLevel='all'; currentMFilter='all';
   document.getElementById('page-sub').textContent='All levels · Click any card or row for details';
   document.querySelectorAll('.fpill').forEach((b,i)=>b.classList.toggle('active',i===0));
