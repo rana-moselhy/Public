@@ -335,23 +335,23 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
     <div class="kpi-strip" id="kpi-strip">
       <div class="kpi-card kc-prom" onclick="filterByStatus('prom')" id="kc-prom">
         <div class="kpi-icon" style="background:rgba(168,85,247,.2)"><svg fill="none" stroke="#a855f7" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20V10M12 10l-4 4M12 10l4 4"/><path d="M5 4h14" stroke-linecap="round"/></svg></div>
-        <div class="kpi-label">Promotion eligible</div>
+        <div class="kpi-label">Exceed</div>
         <div class="kpi-val" id="kv-prom">9</div>
-        <div class="kpi-sub">Score ≥ 4.5 + tenure ready</div>
+        <div class="kpi-sub">Score 4.6 – 5</div>
         <div class="kpi-trend trend-up" id="kt-prom">↑ 2 this quarter</div>
       </div>
       <div class="kpi-card kc-exc" onclick="filterByStatus('exc')" id="kc-exc">
         <div class="kpi-icon" style="background:rgba(34,197,94,.2)"><svg fill="none" stroke="#22c55e" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
         <div class="kpi-label">High performers</div>
         <div class="kpi-val" id="kv-exc">14</div>
-        <div class="kpi-sub">Score ≥ 4.5</div>
+        <div class="kpi-sub">Score 3.8 – 4.5</div>
         <div class="kpi-trend trend-up">↑ Avg 4.7 / 5.0</div>
       </div>
       <div class="kpi-card kc-meet" onclick="filterByStatus('meet')" id="kc-meet">
         <div class="kpi-icon" style="background:rgba(59,130,246,.2)"><svg fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
         <div class="kpi-label">On track</div>
         <div class="kpi-val" id="kv-meet">18</div>
-        <div class="kpi-sub">Score 3.5 – 4.4</div>
+        <div class="kpi-sub">Score 3.0 – 3.7</div>
         <div class="kpi-trend trend-neu">30% of team</div>
       </div>
       <div class="kpi-card kc-imp" onclick="filterByStatus('imp')" id="kc-imp">
@@ -359,7 +359,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
         <div class="kpi-label">Needs improvement</div>
         <div class="kpi-val" id="kv-imp">11</div>
         <div class="kpi-sub">Training plan required</div>
-        <div class="kpi-trend trend-down">↓ Score 2.5 – 3.4</div>
+        <div class="kpi-trend trend-down">↓ Score 2.5 – 2.9</div>
       </div>
       <div class="kpi-card kc-pip" onclick="filterByStatus('pip')" id="kc-pip">
         <div class="kpi-icon" style="background:rgba(239,68,68,.2)"><svg fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div>
@@ -376,7 +376,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
         <div class="card-title">Score distribution by level</div>
         <div class="chart-wrap" style="height:200px"><canvas id="distChart" role="img" aria-label="Stacked bar chart of score distribution per team level"></canvas></div>
         <div class="legend-row">
-          <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div>Promotion eligible</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div>Exceed</div>
           <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>High performer</div>
           <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>On track</div>
           <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Needs improvement</div>
@@ -397,7 +397,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
     <div style="margin-bottom:14px">
       <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Action overview — click to filter</div>
       <div class="rec-grid">
-        <div class="rec-card rc-prom" onclick="filterByStatus('prom')"><div class="rc-num" id="rc-prom">9</div><div class="rc-label">Promotion eligible</div><div class="rc-sub">Score ≥ 4.5 · tenure met</div></div>
+        <div class="rec-card rc-prom" onclick="filterByStatus('prom')"><div class="rc-num" id="rc-prom">9</div><div class="rc-label">Exceed</div><div class="rc-sub">Score 4.6 – 5</div></div>
         <div class="rec-card rc-exc" onclick="filterByStatus('exc')"><div class="rc-num" id="rc-exc">14</div><div class="rc-label">High performers</div><div class="rc-sub">Exceeding expectations</div></div>
         <div class="rec-card rc-meet" onclick="filterByStatus('meet')"><div class="rc-num" id="rc-meet">18</div><div class="rc-label">Meets expectations</div><div class="rc-sub">On track, developing</div></div>
         <div class="rec-card rc-imp" onclick="filterByStatus('imp')"><div class="rc-num" id="rc-imp">11</div><div class="rc-label">Needs improvement</div><div class="rc-sub">Assign training plan</div></div>
@@ -411,7 +411,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
       <div class="table-header">
         <div class="filter-pills" id="filter-pills">
           <button class="fpill active" onclick="setMFilter('all',this)">All</button>
-          <button class="fpill" onclick="setMFilter('prom',this)">Promotion eligible</button>
+          <button class="fpill" onclick="setMFilter('prom',this)">Exceed</button>
           <button class="fpill" onclick="setMFilter('exc',this)">High performer</button>
           <button class="fpill" onclick="setMFilter('meet',this)">On track</button>
           <button class="fpill" onclick="setMFilter('imp',this)">Needs improvement</button>
@@ -428,9 +428,6 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
               <th onclick="sortBy('name')">Name <span class="sort-icon">↕</span></th>
               <th onclick="sortBy('level')">Level <span class="sort-icon">↕</span></th>
               <th onclick="sortBy('project')">Project</th>
-              <th onclick="sortBy('lead')">Lead eval <span class="sort-icon">↕</span></th>
-              <th onclick="sortBy('srjr')">Sr/Jr eval <span class="sort-icon">↕</span></th>
-              <th onclick="sortBy('kpi')">KPI avg <span class="sort-icon">↕</span></th>
               <th onclick="sortBy('final')">Final score <span class="sort-icon">↕</span></th>
               <th>Status</th>
               <th>Action</th>
@@ -549,7 +546,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
 
 <script>
 const LEVELS = {j1:"Junior 1",j2:"Junior 2",s1:"Senior 1",s2:"Senior 2",ae:"Associate Expert"};
-const STATUS = {prom:"Promotion eligible",exc:"High performer",meet:"On track",imp:"Needs improvement",pip:"PDP required",pen:"Pending"};
+const STATUS = {prom:"Exceed",exc:"High performer",meet:"On track",imp:"Needs improvement",pip:"PDP required",pen:"Pending"};
 const PILL_CLS = {prom:"p-prom",exc:"p-exc",meet:"p-meet",imp:"p-imp",pip:"p-pip",pen:"p-pen"};
 const SR_CLS   = {prom:"sr-prom",exc:"sr-exc",meet:"sr-meet",imp:"sr-imp",pip:"sr-pip",pen:"sr-pen"};
 const AVATAR_BG = {j1:"#5b6af5",j2:"#7c3aed",s1:"#0ea5e9",s2:"#0891b2",ae:"#059669",pen:"#64748b"};
@@ -778,7 +775,7 @@ function renderTable(){
   const data=getTableData();
   const tbody=document.getElementById('mtbody');
   if(!data.length){
-    tbody.innerHTML='<tr><td colspan="10" class="empty">No members match this filter.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="7" class="empty">No members match this filter.</td></tr>';
   } else {
     tbody.innerHTML=data.map(m=>{
       const p=PILL_CLS[m.status]||'p-pen';
@@ -789,9 +786,6 @@ function renderTable(){
         <td style="font-weight:500">${m.name}</td>
         <td style="color:var(--text-2)">${LEVELS[m.level]||'—'}</td>
         <td style="color:var(--text-3)">Project ${m.project}</td>
-        <td style="text-align:center;font-family:var(--mono)">${m.lead!==null?m.lead.toFixed(1):'—'}</td>
-        <td style="text-align:center;font-family:var(--mono)">${m.srjr!==null?m.srjr.toFixed(1):'—'}</td>
-        <td style="text-align:center;font-family:var(--mono)">${m.kpi!==null?m.kpi.toFixed(1):'—'}</td>
         <td style="text-align:center"><div class="score-ring ${sr}">${fs}</div></td>
         <td><span class="pill ${p}">${STATUS[m.status]}</span></td>
         <td><button class="action-btn" onclick="event.stopPropagation();openDetail(${m.id})">View →</button></td>
@@ -1041,9 +1035,7 @@ function parseFormsExport(headers, rows){
   return [...people.entries()].map(([name,p])=>{
     const srjr=formsAvg(p.srjrRowAvgs), lead=formsAvg(p.leadRowAvgs);
     const final=(lead!=null&&srjr!=null)?(lead+srjr)/2:(lead??srjr);
-    // No tenure data in the form, so "Promotion eligible" can't be auto-derived
-    // (it requires tenure); auto-status tops out at "High performer".
-    const status = final==null?'pen': final>=4.5?'exc': final>=3.5?'meet': final>=2.5?'imp':'pip';
+    const status = final==null?'pen': final>=4.6?'prom': final>=3.8?'exc': final>=3.0?'meet': final>=2.5?'imp':'pip';
     return {
       id:nextId++, name, level:p.level, project:p.project,
       lead, srjr, kpi:null, final, tenure:0, status,
