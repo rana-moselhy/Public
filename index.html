@@ -88,10 +88,6 @@ input{font-family:inherit}
 .topbar-title{font-size:15px;font-weight:600;color:var(--text)}
 .topbar-sub{font-size:11px;color:var(--text-3)}
 .topbar-right{display:flex;align-items:center;gap:8px}
-.search-box{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 12px}
-.search-box svg{width:14px;height:14px;color:var(--text-3);flex-shrink:0}
-.search-box input{background:none;border:none;outline:none;color:var(--text);font-size:13px;width:180px}
-.search-box input::placeholder{color:var(--text-3)}
 .btn{font-size:12px;padding:7px 14px;border-radius:8px;border:1px solid var(--border-strong);background:var(--card);color:var(--text-2);cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
 .btn:hover{background:var(--card-hover);color:var(--text)}
 .btn-accent{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -301,18 +297,6 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
       <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       Overview
     </button>
-    <button class="nav-item" onclick="setView('promotion',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 20V10M12 10l-4 4M12 10l4 4"/><path d="M5 4h14" stroke-linecap="round"/></svg>
-      Promotion eligible
-    </button>
-    <button class="nav-item" onclick="setView('improvement',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
-      Needs improvement
-    </button>
-    <button class="nav-item" onclick="setView('pending',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M12 9v6"/></svg>
-      Pending evaluations
-    </button>
   </div>
 
   <div class="sidebar-section">Levels</div>
@@ -340,14 +324,9 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
       <div class="topbar-sub" id="page-sub">All levels · Click any card or row for details</div>
     </div>
     <div class="topbar-right">
-      <div class="search-box">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" placeholder="Search member..." id="search-input" oninput="applyFilters()">
-      </div>
       <button class="btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Switch theme">🌙 Dark</button>
       <button class="btn" onclick="openDataModal()">Data source</button>
       <button class="btn" onclick="exportCSV()">Export CSV</button>
-      <button class="btn btn-accent" id="level-badge-btn">All levels</button>
     </div>
   </div>
 
@@ -384,7 +363,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
       </div>
       <div class="kpi-card kc-pip" onclick="filterByStatus('pip')" id="kc-pip">
         <div class="kpi-icon" style="background:rgba(239,68,68,.2)"><svg fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div>
-        <div class="kpi-label">PIP required</div>
+        <div class="kpi-label">PDP required</div>
         <div class="kpi-val" id="kv-pip">0</div>
         <div class="kpi-sub">Score below 2.5</div>
         <div class="kpi-trend trend-neu">None this cycle</div>
@@ -422,7 +401,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
         <div class="rec-card rc-exc" onclick="filterByStatus('exc')"><div class="rc-num" id="rc-exc">14</div><div class="rc-label">High performers</div><div class="rc-sub">Exceeding expectations</div></div>
         <div class="rec-card rc-meet" onclick="filterByStatus('meet')"><div class="rc-num" id="rc-meet">18</div><div class="rc-label">Meets expectations</div><div class="rc-sub">On track, developing</div></div>
         <div class="rec-card rc-imp" onclick="filterByStatus('imp')"><div class="rc-num" id="rc-imp">11</div><div class="rc-label">Needs improvement</div><div class="rc-sub">Assign training plan</div></div>
-        <div class="rec-card rc-pip" onclick="filterByStatus('pip')"><div class="rc-num" id="rc-pip">0</div><div class="rc-label">PIP required</div><div class="rc-sub">Score below 2.5</div></div>
+        <div class="rec-card rc-pip" onclick="filterByStatus('pip')"><div class="rc-num" id="rc-pip">0</div><div class="rc-label">PDP required</div><div class="rc-sub">Score below 2.5</div></div>
         <div class="rec-card rc-pen" onclick="filterByStatus('pen')"><div class="rc-num" id="rc-pen">8</div><div class="rc-label">Pending evaluation</div><div class="rc-sub">Awaiting data input</div></div>
       </div>
     </div>
@@ -436,7 +415,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
           <button class="fpill" onclick="setMFilter('exc',this)">High performer</button>
           <button class="fpill" onclick="setMFilter('meet',this)">On track</button>
           <button class="fpill" onclick="setMFilter('imp',this)">Needs improvement</button>
-          <button class="fpill" onclick="setMFilter('pip',this)">PIP</button>
+          <button class="fpill" onclick="setMFilter('pip',this)">PDP</button>
           <button class="fpill" onclick="setMFilter('pen',this)">Pending</button>
         </div>
         <span id="sort-label" style="font-size:11px;color:var(--text-3)">Sort by: Final score ↓</span>
@@ -570,7 +549,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
 
 <script>
 const LEVELS = {j1:"Junior 1",j2:"Junior 2",s1:"Senior 1",s2:"Senior 2",ae:"Associate Expert"};
-const STATUS = {prom:"Promotion eligible",exc:"High performer",meet:"On track",imp:"Needs improvement",pip:"PIP required",pen:"Pending"};
+const STATUS = {prom:"Promotion eligible",exc:"High performer",meet:"On track",imp:"Needs improvement",pip:"PDP required",pen:"Pending"};
 const PILL_CLS = {prom:"p-prom",exc:"p-exc",meet:"p-meet",imp:"p-imp",pip:"p-pip",pen:"p-pen"};
 const SR_CLS   = {prom:"sr-prom",exc:"sr-exc",meet:"sr-meet",imp:"sr-imp",pip:"sr-pip",pen:"sr-pen"};
 const AVATAR_BG = {j1:"#5b6af5",j2:"#7c3aed",s1:"#0ea5e9",s2:"#0891b2",ae:"#059669",pen:"#64748b"};
@@ -648,8 +627,6 @@ function getLevelData(){
 
 function getTableData(){
   let data = getLevelData();
-  const q = document.getElementById('search-input').value.toLowerCase().trim();
-  if(q) data = data.filter(m=>m.name.toLowerCase().includes(q)||m.project.toLowerCase().includes(q));
   if(currentMFilter!=='all') data = data.filter(m=>m.status===currentMFilter);
   data = [...data].sort((a,b)=>{
     const av = a[currentSort.key], bv = b[currentSort.key];
@@ -674,7 +651,6 @@ function setLevel(level, btn){
   document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   const label = level==='all'?'All levels':(level==='pen'?'Pending':(LEVELS[level]||level));
-  document.getElementById('level-badge-btn').textContent=label;
   document.getElementById('page-sub').textContent=label+' · Click any card or row for details';
   document.querySelectorAll('.fpill')[0].click();
   render();
@@ -683,10 +659,8 @@ function setLevel(level, btn){
 function setView(view, btn){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const viewMap={overview:{filter:'all',title:'360° Evaluation Overview'},promotion:{filter:'prom',title:'Promotion Eligible'},improvement:{filter:'imp',title:'Needs Improvement'},pending:{filter:'pen',title:'Pending Evaluations'}};
-  const v=viewMap[view];
-  document.getElementById('page-title').textContent=v.title;
-  setMFilter(v.filter, document.querySelectorAll('.fpill')[['all','prom','exc','meet','imp','pip','pen'].indexOf(v.filter)]);
+  document.getElementById('page-title').textContent='360° Evaluation Overview';
+  setMFilter('all', document.querySelectorAll('.fpill')[0]);
 }
 
 function filterByStatus(status){
@@ -709,7 +683,6 @@ function applyFilters(){ renderTable(); }
 
 function clearFilters(){
   currentMFilter='all';
-  document.getElementById('search-input').value='';
   document.querySelectorAll('.fpill')[0].classList.add('active');
   document.querySelectorAll('.fpill').forEach((b,i)=>b.classList.toggle('active',i===0));
   renderTable();
@@ -937,11 +910,16 @@ function parseCSVLine(line){
 }
 
 function rowsToMembers(headers, rows){
-  const idx=name=>headers.indexOf(name);
+  const norm=h=>String(h).trim().toLowerCase();
+  const normHeaders=headers.map(norm);
+  const idx=name=>normHeaders.indexOf(norm(name));
   const iId=idx('ID'), iName=idx('Name'), iLevel=idx('Level'), iProject=idx('Project'),
         iLead=idx('Lead Eval'), iSrjr=idx('SrJr Eval'), iKpi=idx('KPI Avg'), iFinal=idx('Final Score'),
         iStatus=idx('Status'), iTenure=idx('Tenure (months)');
-  if(iId<0||iName<0) throw new Error('Data must include at least ID and Name columns');
+  if(iId<0||iName<0){
+    const missing=[iId<0&&'ID',iName<0&&'Name'].filter(Boolean).join(', ');
+    throw new Error(`Data must include ${missing} column(s). Found columns: ${headers.join(', ')||'(none)'}`);
+  }
   return rows.map(cols=>{
     const num=v=>(v===undefined||v===''||v==null)?null:Number(v);
     const levelLabel=String(cols[iLevel]??'');
@@ -966,12 +944,122 @@ function parseCSVData(text){
   return rowsToMembers(headers, lines.slice(1).map(parseCSVLine));
 }
 
+// ── MICROSOFT FORMS EXPORT (QA_Evaluation_Forms_Import) ──
+// Raw Forms responses use branching, so the sheet has ~80 columns and one row per
+// submission rather than one row per person. Two disjoint question blocks appear
+// depending on which branch the respondent took:
+//   Block A (col 17-50): Manager Review / Self-Assessment / Peer Review answer the
+//     same ~34 technical/QA competency questions -> rolls up into SrJr Eval + areas.
+//   Block B (col 55-82): "360 Review" answers a distinct ~28 leadership/management
+//     question set -> rolls up into Lead Eval + areas.
+// The person being evaluated can land in any of 4 "Tester Name*" columns depending
+// on the branch taken, so those are coalesced. Column positions are anchored by
+// keyword rather than exact question text since Forms truncates long question text
+// and appends "2"/"3" suffixes to duplicate branch columns.
+const FORMS_TESTER_NAME_COLS=[7,8,9,10];
+const FORMS_PROJECT_COL=6;
+const FORMS_LEVEL_TEXT_COL=11;
+const FORMS_EVAL_TYPE_A_COL=13;
+const FORMS_EVAL_TYPE_B_COL=53;
+const FORMS_BLOCK_A_CATS=[
+  {label:'Test design & coverage', cols:[17,18,19]},
+  {label:'Defect management', cols:[20,21,22,23,24]},
+  {label:'Technical skills', cols:[25,26,27,28,29,30]},
+  {label:'Productivity & delivery', cols:[31,32,33,34,35,36,37,38,49,50]},
+  {label:'Communication', cols:[39,40,41]},
+  {label:'Ownership', cols:[42,43,44,45,46,47,48]},
+];
+const FORMS_BLOCK_B_CATS=[
+  {label:'Leadership & people mgmt', cols:[55,56,57,58,59,60]},
+  {label:'Project & delivery mgmt', cols:[61,62,63,64,65,66,67]},
+  {label:'QA leadership', cols:[68,69,70,71,72,73]},
+  {label:'Agile & delivery', cols:[74,75,80]},
+  {label:'Stakeholder comm.', cols:[76,77,78,79,81,82]},
+];
+const FORMS_LEVEL_PHRASES=[['Associate Expert','ae'],['Senior 2','s2'],['Senior 1','s1'],['Junior 2','j2'],['Junior 1','j1']];
+
+function isFormsExport(headers){ return headers.includes('Tester Name'); }
+
+function formsRatingNum(v){
+  if(v===undefined||v===null||v==='') return null;
+  const n=parseInt(String(v),10);
+  return Number.isNaN(n)?null:n;
+}
+function formsAvg(arr){
+  const vals=arr.filter(v=>v!=null);
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+}
+function formsParseLevel(text){
+  const t=String(text||'').trim();
+  const hit=FORMS_LEVEL_PHRASES.find(([label])=>t.startsWith(label));
+  return hit ? hit[1] : '';
+}
+
+function parseFormsExport(headers, rows){
+  const anchorA=headers[17]||'', anchorB=headers[55]||'';
+  if(!anchorA.includes('Test Case Design') || !anchorB.includes('Coaching & Mentoring')){
+    throw new Error('This looks like a Microsoft Forms export, but its question columns have shifted from the expected layout (col 17 should be "Test Case Design...", col 55 "Coaching & Mentoring..."). The import mapping needs updating to match the current form.');
+  }
+  const people=new Map();
+  const getPerson=name=>{
+    if(!people.has(name)) people.set(name,{
+      project:'', level:'', srjrRowAvgs:[], leadRowAvgs:[],
+      srjrCat:FORMS_BLOCK_A_CATS.map(()=>({sum:0,count:0})),
+      leadCat:FORMS_BLOCK_B_CATS.map(()=>({sum:0,count:0})),
+    });
+    return people.get(name);
+  };
+  rows.forEach(row=>{
+    const name=FORMS_TESTER_NAME_COLS.map(i=>row[i]).find(v=>v!=null&&String(v).trim()!=='');
+    if(!name) return;
+    const p=getPerson(String(name).trim());
+    const project=row[FORMS_PROJECT_COL];
+    if(project && !p.project) p.project=String(project).trim();
+    if(!p.level){ const lvl=formsParseLevel(row[FORMS_LEVEL_TEXT_COL]); if(lvl) p.level=lvl; }
+
+    if(row[FORMS_EVAL_TYPE_A_COL]!=null && String(row[FORMS_EVAL_TYPE_A_COL]).trim()!==''){
+      const rowVals=[];
+      FORMS_BLOCK_A_CATS.forEach((cat,ci)=>cat.cols.forEach(col=>{
+        const n=formsRatingNum(row[col]);
+        if(n!=null){ p.srjrCat[ci].sum+=n; p.srjrCat[ci].count++; rowVals.push(n); }
+      }));
+      const rowAvg=formsAvg(rowVals);
+      if(rowAvg!=null) p.srjrRowAvgs.push(rowAvg);
+    }
+    if(row[FORMS_EVAL_TYPE_B_COL]!=null && String(row[FORMS_EVAL_TYPE_B_COL]).trim()!==''){
+      const rowVals=[];
+      FORMS_BLOCK_B_CATS.forEach((cat,ci)=>cat.cols.forEach(col=>{
+        const n=formsRatingNum(row[col]);
+        if(n!=null){ p.leadCat[ci].sum+=n; p.leadCat[ci].count++; rowVals.push(n); }
+      }));
+      const rowAvg=formsAvg(rowVals);
+      if(rowAvg!=null) p.leadRowAvgs.push(rowAvg);
+    }
+  });
+  if(!people.size) throw new Error('No recognizable evaluation rows found (expected values in the Tester Name columns).');
+  let nextId=1;
+  return [...people.entries()].map(([name,p])=>{
+    const srjr=formsAvg(p.srjrRowAvgs), lead=formsAvg(p.leadRowAvgs);
+    const final=(lead!=null&&srjr!=null)?(lead+srjr)/2:(lead??srjr);
+    // No tenure data in the form, so "Promotion eligible" can't be auto-derived
+    // (it requires tenure); auto-status tops out at "High performer".
+    const status = final==null?'pen': final>=4.5?'exc': final>=3.5?'meet': final>=2.5?'imp':'pip';
+    return {
+      id:nextId++, name, level:p.level, project:p.project,
+      lead, srjr, kpi:null, final, tenure:0, status,
+      leadC:p.leadRowAvgs.length?p.leadCat.map(c=>c.count?c.sum/c.count:0):[],
+      srjrC:p.srjrRowAvgs.length?p.srjrCat.map(c=>c.count?c.sum/c.count:0):[],
+    };
+  });
+}
+
 function parseXLSXData(buf){
   const wb=XLSX.read(buf,{type:'array'});
   const ws=wb.Sheets[wb.SheetNames[0]];
   const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''}).filter(r=>r.some(c=>c!==''&&c!=null));
   if(rows.length<2) throw new Error('Sheet has no data rows');
   const headers=rows[0].map(h=>String(h).trim());
+  if(isFormsExport(headers)) return parseFormsExport(headers, rows.slice(1));
   return rowsToMembers(headers, rows.slice(1));
 }
 
@@ -992,7 +1080,6 @@ function applyLoadedData(newData, sourceLabel){
   currentLevel='all'; currentMFilter='all';
   document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active'));
   document.querySelector('.ltab[data-level="all"]')?.classList.add('active');
-  document.getElementById('level-badge-btn').textContent='All levels';
   document.getElementById('page-sub').textContent='All levels · Click any card or row for details';
   document.querySelectorAll('.fpill').forEach((b,i)=>b.classList.toggle('active',i===0));
   render();
