@@ -483,6 +483,13 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
       <div class="d-section-title">Upload from file</div>
       <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Accepts .json (array of member records), .csv, or .xlsx/.xls (same columns as Export CSV). The loaded data is saved in this browser and reopens as the default next time.</div>
       <input type="file" id="data-file-input" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onchange="handleFileUpload(event)">
+      <div id="publish-section" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:8px">The upload above only saved to <b>this browser</b>. To make it show up for anyone opening the site in any browser, publish it to the repo (needs a GitHub token with write access to this repo, entered here — it's used only for this request and never saved).</div>
+        <div style="display:flex;gap:8px">
+          <input type="password" id="publish-token-input" placeholder="GitHub personal access token" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px" autocomplete="off">
+          <button class="btn btn-accent" onclick="publishToGitHub()">Publish to website</button>
+        </div>
+      </div>
     </div>
     <div style="margin-bottom:18px">
       <div class="d-section-title">Sync from cloud URL</div>
@@ -1194,6 +1201,8 @@ function applyLoadedData(newData, sourceLabel, persist=true){
   showDataStatus(`Loaded ${newData.length} members from ${sourceLabel}.`, true);
 }
 
+let pendingPublishFile = null; // {buffer: ArrayBuffer, ext: 'xlsx'|'csv'|'json'}
+
 function handleFileUpload(evt){
   const file=evt.target.files[0];
   if(!file) return;
@@ -1204,6 +1213,11 @@ function handleFileUpload(evt){
     try{
       const data = isXLSX ? parseXLSXData(reader.result) : (isJSON ? parseJSONData(reader.result) : parseCSVData(reader.result));
       applyLoadedData(data, `"${file.name}"`);
+      pendingPublishFile = {
+        buffer: isXLSX ? reader.result : new TextEncoder().encode(reader.result).buffer,
+        ext: isXLSX ? 'xlsx' : (isJSON ? 'json' : 'csv')
+      };
+      document.getElementById('publish-section').style.display='block';
     }catch(err){
       showDataStatus('Could not load file: '+err.message, false);
     }
@@ -1211,6 +1225,59 @@ function handleFileUpload(evt){
   reader.onerror=()=>showDataStatus('Could not read the selected file.', false);
   if(isXLSX) reader.readAsArrayBuffer(file); else reader.readAsText(file);
   evt.target.value='';
+}
+
+const GITHUB_REPO_OWNER = 'rana-moselhy';
+const GITHUB_REPO_NAME = 'Public';
+const GITHUB_REPO_BRANCH = 'main';
+const SNAPSHOT_EXTS = ['xlsx','csv','json'];
+
+function arrayBufferToBase64(buf){
+  let binary='';
+  const bytes=new Uint8Array(buf);
+  const chunk=0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary+=String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+  }
+  return btoa(binary);
+}
+
+async function publishToGitHub(){
+  if(!pendingPublishFile){ showDataStatus('Upload a file first.', false); return; }
+  const token=document.getElementById('publish-token-input').value.trim();
+  if(!token){ showDataStatus('Enter a GitHub token first.', false); return; }
+  const path=`data/team-data.${pendingPublishFile.ext}`;
+  const apiUrl=`https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${path}`;
+  const authHeaders={ Authorization:`Bearer ${token}`, Accept:'application/vnd.github+json' };
+  showDataStatus('Publishing…', true);
+  try{
+    let sha;
+    const existing=await fetch(`${apiUrl}?ref=${GITHUB_REPO_BRANCH}`, {headers:authHeaders});
+    if(existing.ok){ sha=(await existing.json()).sha; }
+    else if(existing.status!==404){ throw new Error('Could not check existing file (status '+existing.status+')'); }
+
+    const putRes=await fetch(apiUrl, {
+      method:'PUT',
+      headers:{...authHeaders, 'Content-Type':'application/json'},
+      body:JSON.stringify({
+        message:'Publish data update from dashboard',
+        content:arrayBufferToBase64(pendingPublishFile.buffer),
+        branch:GITHUB_REPO_BRANCH,
+        ...(sha?{sha}:{})
+      })
+    });
+    if(!putRes.ok){
+      const body=await putRes.json().catch(()=>({}));
+      if(putRes.status===401) throw new Error('Token was rejected — check it\'s valid and not expired.');
+      if(putRes.status===403) throw new Error('Token doesn\'t have write access to this repo (needs "contents" write permission).');
+      if(putRes.status===404) throw new Error('Repo/branch not found — check GITHUB_REPO_OWNER/NAME/BRANCH match this repo.');
+      throw new Error(body.message || ('Request failed with status '+putRes.status));
+    }
+    document.getElementById('publish-token-input').value='';
+    showDataStatus('Published! Anyone opening the site will now see this data (may take a few seconds to propagate).', true);
+  }catch(err){
+    showDataStatus('Publish failed: '+err.message, false);
+  }
 }
 
 async function fetchAndLoadData(url, sourceLabel){
@@ -1237,12 +1304,44 @@ async function syncFromUrl(){
   }
 }
 
+// Checks all known snapshot filenames and returns the most recently modified
+// one — needed because the automated workflow always writes .xlsx, but a
+// manual "Publish to website" upload could be a newer .csv/.json.
+async function findRepoSnapshotUrl(){
+  const candidates=[];
+  for(const ext of SNAPSHOT_EXTS){
+    const url=`data/team-data.${ext}?t=`+Date.now();
+    try{
+      const res=await fetch(url, {method:'HEAD'});
+      if(res.ok){
+        const modified=Date.parse(res.headers.get('last-modified'))||0;
+        candidates.push({url, modified});
+      }
+    }catch(e){ /* try next extension */ }
+  }
+  if(!candidates.length) return null;
+  candidates.sort((a,b)=>b.modified-a.modified);
+  return candidates[0].url;
+}
+
 async function loadRepoSnapshot(){
   try{
-    await fetchAndLoadData('data/team-data.xlsx?t='+Date.now(), 'repo snapshot');
+    const url=await findRepoSnapshotUrl();
+    if(!url) throw new Error('no snapshot file present at data/team-data.{xlsx,csv,json}');
+    await fetchAndLoadData(url, 'repo snapshot');
   }catch(err){
-    showDataStatus('No repo snapshot found yet. Set up .github/workflows/sync-excel-data.yml and add the EXCEL_SOURCE_URL repo secret, or run the workflow once manually from the Actions tab. ('+err.message+')', false);
+    showDataStatus('No repo snapshot found yet. Publish a file above, or set up .github/workflows/sync-excel-data.yml and add the EXCEL_SOURCE_URL repo secret. ('+err.message+')', false);
   }
+}
+
+// Silently try the repo snapshot on page load so anyone opening the site sees
+// the latest published data, without needing to click "Load latest snapshot".
+// Falls back to whatever restorePersistedData already loaded from localStorage.
+async function autoLoadRepoSnapshotOnStartup(){
+  try{
+    const url=await findRepoSnapshotUrl();
+    if(url) await fetchAndLoadData(url, 'repo snapshot');
+  }catch(e){ /* keep whatever's already loaded */ }
 }
 
 function resetToSampleData(){
@@ -1252,6 +1351,7 @@ function resetToSampleData(){
 }
 
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeDetail(); closeDataModal(); } });
+autoLoadRepoSnapshotOnStartup();
 render();
 </script>
 </body>
