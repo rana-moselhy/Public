@@ -553,15 +553,15 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
 </script>
 
 <script>
-const DEFAULT_LEVELS = {j1:"Junior 1",j2:"Junior 2",s1:"Senior 1",s2:"Senior 2",ae:"Associate Expert"};
-// Overridable by a "Levels" lookup sheet in an uploaded workbook (see
-// applyLevelsLookup/parseLevelsLookupSheet) — falls back to the defaults
-// above when no such sheet is present.
-let BASE_LEVELS = {...DEFAULT_LEVELS};
-// LEVELS starts as the five known levels but is refreshed from whatever's
-// actually in `raw` (see refreshLevels), so any custom level value coming
-// from an uploaded file gets a real label everywhere LEVELS is looked up,
-// not just via the levelLabel() fallback below.
+// No hardcoded level taxonomy — level identity/labels come entirely from
+// whatever's in the uploaded file. BASE_LEVELS is only populated by an
+// optional "Levels" lookup sheet in an uploaded workbook (see
+// applyLevelsLookup/parseLevelsLookupSheet) for files that want to map short
+// codes to display labels; otherwise every level is just its own raw text.
+let BASE_LEVELS = {};
+// LEVELS is refreshed from whatever's actually in `raw` (see refreshLevels),
+// so every level value coming from an uploaded file gets a real label
+// everywhere LEVELS is looked up, not just via the levelLabel() fallback below.
 let LEVELS = {...BASE_LEVELS};
 // Title-cases every word (not just the first letter), so a raw value like
 // "associate expert (project mercury)" reads as "Associate Expert (Project
@@ -599,64 +599,64 @@ function normalizeDateValue(v){
 const STATUS = {prom:"Exceed",exc:"High performer",meet:"On track",imp:"Needs improvement",pip:"PDP required",pen:"Pending"};
 const PILL_CLS = {prom:"p-prom",exc:"p-exc",meet:"p-meet",imp:"p-imp",pip:"p-pip",pen:"p-pen"};
 const SR_CLS   = {prom:"sr-prom",exc:"sr-exc",meet:"sr-meet",imp:"sr-imp",pip:"sr-pip",pen:"sr-pen"};
-const AVATAR_BG = {j1:"#5b6af5",j2:"#7c3aed",s1:"#0ea5e9",s2:"#0891b2",ae:"#059669",pen:"#64748b"};
+const AVATAR_BG = {"junior 1":"#5b6af5","junior 2":"#7c3aed","senior 1":"#0ea5e9","senior 2":"#0891b2","associate expert":"#059669",pen:"#64748b"};
 const LEAD_AREAS = ["Leadership & people mgmt","Project & delivery mgmt","QA leadership","Agile & delivery","Stakeholder comm."];
 const SRJR_AREAS = ["Test design & coverage","Defect management","Technical skills","Productivity & delivery","Communication","Ownership"];
 const AREA_COLORS = ["#5b6af5","#22c55e","#f59e0b","#a855f7","#3b82f6","#ef4444"];
 
 let raw = [
-  {id:1,name:"Ahmed Hassan",level:"j1",project:"Alpha",lead:4.7,srjr:4.9,kpi:4.8,final:4.8,tenure:18,status:"prom",leadC:[4.8,4.6,4.9,4.7,4.6],srjrC:[5.0,4.8,4.9,4.9,5.0,4.7]},
-  {id:2,name:"Sara El-Sayed",level:"j1",project:"Beta",lead:4.5,srjr:4.6,kpi:4.4,final:4.5,tenure:20,status:"prom",leadC:[4.4,4.5,4.7,4.6,4.3],srjrC:[4.6,4.5,4.7,4.8,4.6,4.4]},
-  {id:3,name:"Karim Adel",level:"j1",project:"Alpha",lead:3.8,srjr:3.9,kpi:3.7,final:3.8,tenure:8,status:"meet",leadC:[3.9,3.7,3.8,3.8,3.9],srjrC:[4.0,3.8,3.7,3.9,3.8,3.9]},
-  {id:4,name:"Nour Ibrahim",level:"j1",project:"Gamma",lead:3.2,srjr:3.1,kpi:3.0,final:3.1,tenure:6,status:"imp",leadC:[3.1,3.3,3.0,3.2,3.1],srjrC:[3.2,3.0,3.1,3.3,3.0,2.9]},
-  {id:5,name:"Hana Mostafa",level:"j1",project:"Beta",lead:4.1,srjr:4.0,kpi:4.2,final:4.1,tenure:11,status:"exc",leadC:[4.2,4.0,4.1,4.0,4.2],srjrC:[4.1,4.0,3.9,4.2,4.0,4.1]},
-  {id:6,name:"Ramy Gamal",level:"j1",project:"Delta",lead:3.5,srjr:3.6,kpi:3.5,final:3.5,tenure:9,status:"meet",leadC:[3.6,3.5,3.4,3.6,3.5],srjrC:[3.7,3.5,3.6,3.4,3.6,3.5]},
-  {id:7,name:"Dina Youssef",level:"j1",project:"Alpha",lead:2.8,srjr:2.9,kpi:2.7,final:2.8,tenure:5,status:"imp",leadC:[2.9,2.7,2.8,2.9,2.6],srjrC:[3.0,2.8,2.7,2.9,2.8,2.7]},
-  {id:8,name:"Tarek Fawzy",level:"j1",project:"Gamma",lead:null,srjr:null,kpi:null,final:null,tenure:4,status:"pen",leadC:[],srjrC:[]},
-  {id:9,name:"Menna Saber",level:"j1",project:"Beta",lead:3.7,srjr:3.8,kpi:3.6,final:3.7,tenure:10,status:"meet",leadC:[3.8,3.6,3.7,3.8,3.7],srjrC:[3.9,3.7,3.8,3.6,3.8,3.7]},
-  {id:10,name:"Ayman Lotfy",level:"j1",project:"Delta",lead:null,srjr:null,kpi:null,final:null,tenure:3,status:"pen",leadC:[],srjrC:[]},
-  {id:11,name:"Ghada Ismail",level:"j1",project:"Alpha",lead:4.3,srjr:4.2,kpi:4.1,final:4.2,tenure:13,status:"exc",leadC:[4.4,4.2,4.3,4.1,4.3],srjrC:[4.3,4.1,4.2,4.3,4.2,4.1]},
-  {id:12,name:"Amr Khalil",level:"j1",project:"Beta",lead:3.9,srjr:4.0,kpi:3.8,final:3.9,tenure:12,status:"meet",leadC:[4.0,3.8,3.9,4.0,3.8],srjrC:[4.1,3.9,4.0,3.8,4.0,3.9]},
-  {id:13,name:"Mariam Nabil",level:"j2",project:"Gamma",lead:4.6,srjr:4.7,kpi:4.5,final:4.6,tenure:22,status:"prom",leadC:[4.7,4.5,4.6,4.7,4.5],srjrC:[4.8,4.6,4.7,4.5,4.7,4.6]},
-  {id:14,name:"Youssef Taha",level:"j2",project:"Alpha",lead:null,srjr:null,kpi:null,final:null,tenure:7,status:"pen",leadC:[],srjrC:[]},
-  {id:15,name:"Layla Ashraf",level:"j2",project:"Beta",lead:3.0,srjr:2.9,kpi:3.1,final:3.0,tenure:9,status:"imp",leadC:[3.1,2.9,3.0,3.1,2.8],srjrC:[3.0,2.8,2.9,3.1,2.9,2.8]},
-  {id:16,name:"Sameh Galal",level:"j2",project:"Delta",lead:4.0,srjr:4.1,kpi:3.9,final:4.0,tenure:14,status:"exc",leadC:[4.1,3.9,4.0,4.1,3.9],srjrC:[4.2,4.0,4.1,3.9,4.1,4.0]},
-  {id:17,name:"Rana Ayman",level:"j2",project:"Gamma",lead:3.6,srjr:3.7,kpi:3.5,final:3.6,tenure:11,status:"meet",leadC:[3.7,3.5,3.6,3.7,3.5],srjrC:[3.8,3.6,3.7,3.5,3.7,3.6]},
-  {id:18,name:"Bassem Nasser",level:"j2",project:"Beta",lead:4.4,srjr:4.5,kpi:4.3,final:4.4,tenure:16,status:"exc",leadC:[4.5,4.3,4.4,4.5,4.3],srjrC:[4.6,4.4,4.5,4.3,4.5,4.4]},
-  {id:19,name:"Sherine Hamed",level:"j2",project:"Alpha",lead:null,srjr:null,kpi:null,final:null,tenure:5,status:"pen",leadC:[],srjrC:[]},
-  {id:20,name:"Walid Emad",level:"j2",project:"Delta",lead:3.3,srjr:3.2,kpi:3.4,final:3.3,tenure:8,status:"imp",leadC:[3.4,3.2,3.3,3.2,3.4],srjrC:[3.3,3.1,3.2,3.4,3.2,3.1]},
-  {id:21,name:"Khaled Samir",level:"s1",project:"Alpha",lead:4.8,srjr:4.9,kpi:4.7,final:4.8,tenure:30,status:"prom",leadC:[4.9,4.7,4.8,4.9,4.7],srjrC:[5.0,4.8,4.9,4.7,4.9,4.8]},
-  {id:22,name:"Eman Reda",level:"s1",project:"Beta",lead:4.2,srjr:4.3,kpi:4.1,final:4.2,tenure:18,status:"exc",leadC:[4.3,4.1,4.2,4.3,4.1],srjrC:[4.4,4.2,4.3,4.1,4.3,4.2]},
-  {id:23,name:"Sherif Osman",level:"s1",project:"Gamma",lead:3.8,srjr:3.9,kpi:3.7,final:3.8,tenure:15,status:"meet",leadC:[3.9,3.7,3.8,3.9,3.7],srjrC:[4.0,3.8,3.9,3.7,3.9,3.8]},
-  {id:24,name:"Mona Farouk",level:"s1",project:"Delta",lead:3.4,srjr:3.3,kpi:3.5,final:3.4,tenure:12,status:"imp",leadC:[3.5,3.3,3.4,3.3,3.5],srjrC:[3.4,3.2,3.3,3.5,3.3,3.2]},
-  {id:25,name:"Hassan Fouad",level:"s1",project:"Alpha",lead:4.5,srjr:4.6,kpi:4.4,final:4.5,tenure:24,status:"prom",leadC:[4.6,4.4,4.5,4.6,4.4],srjrC:[4.7,4.5,4.6,4.4,4.6,4.5]},
-  {id:26,name:"Nadine Magdy",level:"s1",project:"Beta",lead:3.9,srjr:4.0,kpi:3.8,final:3.9,tenure:16,status:"meet",leadC:[4.0,3.8,3.9,4.0,3.8],srjrC:[4.1,3.9,4.0,3.8,4.0,3.9]},
-  {id:27,name:"Tamer El-Badry",level:"s1",project:"Gamma",lead:null,srjr:null,kpi:null,final:null,tenure:10,status:"pen",leadC:[],srjrC:[]},
-  {id:28,name:"Salma Wael",level:"s1",project:"Delta",lead:4.1,srjr:4.2,kpi:4.0,final:4.1,tenure:19,status:"exc",leadC:[4.2,4.0,4.1,4.2,4.0],srjrC:[4.3,4.1,4.2,4.0,4.2,4.1]},
-  {id:29,name:"Ahmed Ragab",level:"s1",project:"Alpha",lead:2.7,srjr:2.8,kpi:2.6,final:2.7,tenure:9,status:"imp",leadC:[2.8,2.6,2.7,2.8,2.6],srjrC:[2.9,2.7,2.8,2.6,2.8,2.7]},
-  {id:30,name:"Ines Shawky",level:"s1",project:"Beta",lead:4.3,srjr:4.4,kpi:4.2,final:4.3,tenure:21,status:"exc",leadC:[4.4,4.2,4.3,4.4,4.2],srjrC:[4.5,4.3,4.4,4.2,4.4,4.3]},
-  {id:31,name:"Omar Mansour",level:"s1",project:"Gamma",lead:3.6,srjr:3.7,kpi:3.5,final:3.6,tenure:13,status:"meet",leadC:[3.7,3.5,3.6,3.7,3.5],srjrC:[3.8,3.6,3.7,3.5,3.7,3.6]},
-  {id:32,name:"Yara Selim",level:"s1",project:"Delta",lead:4.0,srjr:4.1,kpi:3.9,final:4.0,tenure:17,status:"exc",leadC:[4.1,3.9,4.0,4.1,3.9],srjrC:[4.2,4.0,4.1,3.9,4.1,4.0]},
-  {id:33,name:"Osama Fathy",level:"s1",project:"Alpha",lead:null,srjr:null,kpi:null,final:null,tenure:6,status:"pen",leadC:[],srjrC:[]},
-  {id:34,name:"Nada Ramzy",level:"s1",project:"Beta",lead:3.7,srjr:3.8,kpi:3.6,final:3.7,tenure:14,status:"meet",leadC:[3.8,3.6,3.7,3.8,3.6],srjrC:[3.9,3.7,3.8,3.6,3.8,3.7]},
-  {id:35,name:"Hazem Saad",level:"s1",project:"Gamma",lead:4.6,srjr:4.7,kpi:4.5,final:4.6,tenure:26,status:"prom",leadC:[4.7,4.5,4.6,4.7,4.5],srjrC:[4.8,4.6,4.7,4.5,4.7,4.6]},
-  {id:36,name:"Fatima Kamal",level:"s2",project:"Alpha",lead:4.7,srjr:4.8,kpi:4.6,final:4.7,tenure:36,status:"prom",leadC:[4.8,4.6,4.7,4.8,4.6],srjrC:[4.9,4.7,4.8,4.6,4.8,4.7]},
-  {id:37,name:"Mahmoud Zaki",level:"s2",project:"Beta",lead:4.3,srjr:4.4,kpi:4.2,final:4.3,tenure:28,status:"exc",leadC:[4.4,4.2,4.3,4.4,4.2],srjrC:[4.5,4.3,4.4,4.2,4.4,4.3]},
-  {id:38,name:"Amira Hassan",level:"s2",project:"Gamma",lead:3.9,srjr:4.0,kpi:3.8,final:3.9,tenure:22,status:"meet",leadC:[4.0,3.8,3.9,4.0,3.8],srjrC:[4.1,3.9,4.0,3.8,4.0,3.9]},
-  {id:39,name:"Ziad Abdallah",level:"s2",project:"Delta",lead:3.2,srjr:3.1,kpi:3.3,final:3.2,tenure:14,status:"imp",leadC:[3.3,3.1,3.2,3.1,3.3],srjrC:[3.2,3.0,3.1,3.3,3.1,3.0]},
-  {id:40,name:"Lobna Samy",level:"s2",project:"Alpha",lead:4.5,srjr:4.6,kpi:4.4,final:4.5,tenure:33,status:"prom",leadC:[4.6,4.4,4.5,4.6,4.4],srjrC:[4.7,4.5,4.6,4.4,4.6,4.5]},
-  {id:41,name:"Samir Badr",level:"s2",project:"Beta",lead:4.1,srjr:4.2,kpi:4.0,final:4.1,tenure:25,status:"exc",leadC:[4.2,4.0,4.1,4.2,4.0],srjrC:[4.3,4.1,4.2,4.0,4.2,4.1]},
-  {id:42,name:"Reem Farid",level:"s2",project:"Gamma",lead:null,srjr:null,kpi:null,final:null,tenure:11,status:"pen",leadC:[],srjrC:[]},
-  {id:43,name:"Mohamed Nour",level:"s2",project:"Delta",lead:3.6,srjr:3.7,kpi:3.5,final:3.6,tenure:18,status:"meet",leadC:[3.7,3.5,3.6,3.7,3.5],srjrC:[3.8,3.6,3.7,3.5,3.7,3.6]},
-  {id:44,name:"Amal Ezz",level:"s2",project:"Alpha",lead:4.4,srjr:4.5,kpi:4.3,final:4.4,tenure:30,status:"exc",leadC:[4.5,4.3,4.4,4.5,4.3],srjrC:[4.6,4.4,4.5,4.3,4.5,4.4]},
-  {id:45,name:"Samy Adly",level:"s2",project:"Beta",lead:3.8,srjr:3.9,kpi:3.7,final:3.8,tenure:20,status:"meet",leadC:[3.9,3.7,3.8,3.9,3.7],srjrC:[4.0,3.8,3.9,3.7,3.9,3.8]},
-  {id:46,name:"Dalia Omar",level:"ae",project:"Alpha",lead:4.9,srjr:4.8,kpi:4.9,final:4.9,tenure:48,status:"prom",leadC:[5.0,4.8,4.9,4.9,4.8],srjrC:[4.9,4.7,4.8,4.9,4.8,4.7]},
-  {id:47,name:"Wael Mahmoud",level:"ae",project:"Gamma",lead:4.5,srjr:4.6,kpi:4.4,final:4.5,tenure:40,status:"prom",leadC:[4.6,4.4,4.5,4.6,4.4],srjrC:[4.7,4.5,4.6,4.4,4.6,4.5]},
-  {id:48,name:"Alia Sherif",level:"ae",project:"Beta",lead:4.2,srjr:4.3,kpi:4.1,final:4.2,tenure:36,status:"exc",leadC:[4.3,4.1,4.2,4.3,4.1],srjrC:[4.4,4.2,4.3,4.1,4.3,4.2]},
-  {id:49,name:"Kamal Sedky",level:"ae",project:"Delta",lead:3.8,srjr:3.9,kpi:3.7,final:3.8,tenure:30,status:"meet",leadC:[3.9,3.7,3.8,3.9,3.7],srjrC:[4.0,3.8,3.9,3.7,3.9,3.8]},
-  {id:50,name:"Noura Adel",level:"ae",project:"Alpha",lead:null,srjr:null,kpi:null,final:null,tenure:28,status:"pen",leadC:[],srjrC:[]},
-  {id:51,name:"Taha El-Banna",level:"ae",project:"Beta",lead:4.0,srjr:4.1,kpi:3.9,final:4.0,tenure:32,status:"exc",leadC:[4.1,3.9,4.0,4.1,3.9],srjrC:[4.2,4.0,4.1,3.9,4.1,4.0]},
-  {id:52,name:"Heba Fouad",level:"ae",project:"Gamma",lead:3.5,srjr:3.6,kpi:3.4,final:3.5,tenure:26,status:"meet",leadC:[3.6,3.4,3.5,3.6,3.4],srjrC:[3.7,3.5,3.6,3.4,3.6,3.5]},
+  {id:1,name:"Ahmed Hassan",level:"junior 1",project:"Alpha",lead:4.7,srjr:4.9,kpi:4.8,final:4.8,tenure:18,status:"prom",leadC:[4.8,4.6,4.9,4.7,4.6],srjrC:[5.0,4.8,4.9,4.9,5.0,4.7]},
+  {id:2,name:"Sara El-Sayed",level:"junior 1",project:"Beta",lead:4.5,srjr:4.6,kpi:4.4,final:4.5,tenure:20,status:"prom",leadC:[4.4,4.5,4.7,4.6,4.3],srjrC:[4.6,4.5,4.7,4.8,4.6,4.4]},
+  {id:3,name:"Karim Adel",level:"junior 1",project:"Alpha",lead:3.8,srjr:3.9,kpi:3.7,final:3.8,tenure:8,status:"meet",leadC:[3.9,3.7,3.8,3.8,3.9],srjrC:[4.0,3.8,3.7,3.9,3.8,3.9]},
+  {id:4,name:"Nour Ibrahim",level:"junior 1",project:"Gamma",lead:3.2,srjr:3.1,kpi:3.0,final:3.1,tenure:6,status:"imp",leadC:[3.1,3.3,3.0,3.2,3.1],srjrC:[3.2,3.0,3.1,3.3,3.0,2.9]},
+  {id:5,name:"Hana Mostafa",level:"junior 1",project:"Beta",lead:4.1,srjr:4.0,kpi:4.2,final:4.1,tenure:11,status:"exc",leadC:[4.2,4.0,4.1,4.0,4.2],srjrC:[4.1,4.0,3.9,4.2,4.0,4.1]},
+  {id:6,name:"Ramy Gamal",level:"junior 1",project:"Delta",lead:3.5,srjr:3.6,kpi:3.5,final:3.5,tenure:9,status:"meet",leadC:[3.6,3.5,3.4,3.6,3.5],srjrC:[3.7,3.5,3.6,3.4,3.6,3.5]},
+  {id:7,name:"Dina Youssef",level:"junior 1",project:"Alpha",lead:2.8,srjr:2.9,kpi:2.7,final:2.8,tenure:5,status:"imp",leadC:[2.9,2.7,2.8,2.9,2.6],srjrC:[3.0,2.8,2.7,2.9,2.8,2.7]},
+  {id:8,name:"Tarek Fawzy",level:"junior 1",project:"Gamma",lead:null,srjr:null,kpi:null,final:null,tenure:4,status:"pen",leadC:[],srjrC:[]},
+  {id:9,name:"Menna Saber",level:"junior 1",project:"Beta",lead:3.7,srjr:3.8,kpi:3.6,final:3.7,tenure:10,status:"meet",leadC:[3.8,3.6,3.7,3.8,3.7],srjrC:[3.9,3.7,3.8,3.6,3.8,3.7]},
+  {id:10,name:"Ayman Lotfy",level:"junior 1",project:"Delta",lead:null,srjr:null,kpi:null,final:null,tenure:3,status:"pen",leadC:[],srjrC:[]},
+  {id:11,name:"Ghada Ismail",level:"junior 1",project:"Alpha",lead:4.3,srjr:4.2,kpi:4.1,final:4.2,tenure:13,status:"exc",leadC:[4.4,4.2,4.3,4.1,4.3],srjrC:[4.3,4.1,4.2,4.3,4.2,4.1]},
+  {id:12,name:"Amr Khalil",level:"junior 1",project:"Beta",lead:3.9,srjr:4.0,kpi:3.8,final:3.9,tenure:12,status:"meet",leadC:[4.0,3.8,3.9,4.0,3.8],srjrC:[4.1,3.9,4.0,3.8,4.0,3.9]},
+  {id:13,name:"Mariam Nabil",level:"junior 2",project:"Gamma",lead:4.6,srjr:4.7,kpi:4.5,final:4.6,tenure:22,status:"prom",leadC:[4.7,4.5,4.6,4.7,4.5],srjrC:[4.8,4.6,4.7,4.5,4.7,4.6]},
+  {id:14,name:"Youssef Taha",level:"junior 2",project:"Alpha",lead:null,srjr:null,kpi:null,final:null,tenure:7,status:"pen",leadC:[],srjrC:[]},
+  {id:15,name:"Layla Ashraf",level:"junior 2",project:"Beta",lead:3.0,srjr:2.9,kpi:3.1,final:3.0,tenure:9,status:"imp",leadC:[3.1,2.9,3.0,3.1,2.8],srjrC:[3.0,2.8,2.9,3.1,2.9,2.8]},
+  {id:16,name:"Sameh Galal",level:"junior 2",project:"Delta",lead:4.0,srjr:4.1,kpi:3.9,final:4.0,tenure:14,status:"exc",leadC:[4.1,3.9,4.0,4.1,3.9],srjrC:[4.2,4.0,4.1,3.9,4.1,4.0]},
+  {id:17,name:"Rana Ayman",level:"junior 2",project:"Gamma",lead:3.6,srjr:3.7,kpi:3.5,final:3.6,tenure:11,status:"meet",leadC:[3.7,3.5,3.6,3.7,3.5],srjrC:[3.8,3.6,3.7,3.5,3.7,3.6]},
+  {id:18,name:"Bassem Nasser",level:"junior 2",project:"Beta",lead:4.4,srjr:4.5,kpi:4.3,final:4.4,tenure:16,status:"exc",leadC:[4.5,4.3,4.4,4.5,4.3],srjrC:[4.6,4.4,4.5,4.3,4.5,4.4]},
+  {id:19,name:"Sherine Hamed",level:"junior 2",project:"Alpha",lead:null,srjr:null,kpi:null,final:null,tenure:5,status:"pen",leadC:[],srjrC:[]},
+  {id:20,name:"Walid Emad",level:"junior 2",project:"Delta",lead:3.3,srjr:3.2,kpi:3.4,final:3.3,tenure:8,status:"imp",leadC:[3.4,3.2,3.3,3.2,3.4],srjrC:[3.3,3.1,3.2,3.4,3.2,3.1]},
+  {id:21,name:"Khaled Samir",level:"senior 1",project:"Alpha",lead:4.8,srjr:4.9,kpi:4.7,final:4.8,tenure:30,status:"prom",leadC:[4.9,4.7,4.8,4.9,4.7],srjrC:[5.0,4.8,4.9,4.7,4.9,4.8]},
+  {id:22,name:"Eman Reda",level:"senior 1",project:"Beta",lead:4.2,srjr:4.3,kpi:4.1,final:4.2,tenure:18,status:"exc",leadC:[4.3,4.1,4.2,4.3,4.1],srjrC:[4.4,4.2,4.3,4.1,4.3,4.2]},
+  {id:23,name:"Sherif Osman",level:"senior 1",project:"Gamma",lead:3.8,srjr:3.9,kpi:3.7,final:3.8,tenure:15,status:"meet",leadC:[3.9,3.7,3.8,3.9,3.7],srjrC:[4.0,3.8,3.9,3.7,3.9,3.8]},
+  {id:24,name:"Mona Farouk",level:"senior 1",project:"Delta",lead:3.4,srjr:3.3,kpi:3.5,final:3.4,tenure:12,status:"imp",leadC:[3.5,3.3,3.4,3.3,3.5],srjrC:[3.4,3.2,3.3,3.5,3.3,3.2]},
+  {id:25,name:"Hassan Fouad",level:"senior 1",project:"Alpha",lead:4.5,srjr:4.6,kpi:4.4,final:4.5,tenure:24,status:"prom",leadC:[4.6,4.4,4.5,4.6,4.4],srjrC:[4.7,4.5,4.6,4.4,4.6,4.5]},
+  {id:26,name:"Nadine Magdy",level:"senior 1",project:"Beta",lead:3.9,srjr:4.0,kpi:3.8,final:3.9,tenure:16,status:"meet",leadC:[4.0,3.8,3.9,4.0,3.8],srjrC:[4.1,3.9,4.0,3.8,4.0,3.9]},
+  {id:27,name:"Tamer El-Badry",level:"senior 1",project:"Gamma",lead:null,srjr:null,kpi:null,final:null,tenure:10,status:"pen",leadC:[],srjrC:[]},
+  {id:28,name:"Salma Wael",level:"senior 1",project:"Delta",lead:4.1,srjr:4.2,kpi:4.0,final:4.1,tenure:19,status:"exc",leadC:[4.2,4.0,4.1,4.2,4.0],srjrC:[4.3,4.1,4.2,4.0,4.2,4.1]},
+  {id:29,name:"Ahmed Ragab",level:"senior 1",project:"Alpha",lead:2.7,srjr:2.8,kpi:2.6,final:2.7,tenure:9,status:"imp",leadC:[2.8,2.6,2.7,2.8,2.6],srjrC:[2.9,2.7,2.8,2.6,2.8,2.7]},
+  {id:30,name:"Ines Shawky",level:"senior 1",project:"Beta",lead:4.3,srjr:4.4,kpi:4.2,final:4.3,tenure:21,status:"exc",leadC:[4.4,4.2,4.3,4.4,4.2],srjrC:[4.5,4.3,4.4,4.2,4.4,4.3]},
+  {id:31,name:"Omar Mansour",level:"senior 1",project:"Gamma",lead:3.6,srjr:3.7,kpi:3.5,final:3.6,tenure:13,status:"meet",leadC:[3.7,3.5,3.6,3.7,3.5],srjrC:[3.8,3.6,3.7,3.5,3.7,3.6]},
+  {id:32,name:"Yara Selim",level:"senior 1",project:"Delta",lead:4.0,srjr:4.1,kpi:3.9,final:4.0,tenure:17,status:"exc",leadC:[4.1,3.9,4.0,4.1,3.9],srjrC:[4.2,4.0,4.1,3.9,4.1,4.0]},
+  {id:33,name:"Osama Fathy",level:"senior 1",project:"Alpha",lead:null,srjr:null,kpi:null,final:null,tenure:6,status:"pen",leadC:[],srjrC:[]},
+  {id:34,name:"Nada Ramzy",level:"senior 1",project:"Beta",lead:3.7,srjr:3.8,kpi:3.6,final:3.7,tenure:14,status:"meet",leadC:[3.8,3.6,3.7,3.8,3.6],srjrC:[3.9,3.7,3.8,3.6,3.8,3.7]},
+  {id:35,name:"Hazem Saad",level:"senior 1",project:"Gamma",lead:4.6,srjr:4.7,kpi:4.5,final:4.6,tenure:26,status:"prom",leadC:[4.7,4.5,4.6,4.7,4.5],srjrC:[4.8,4.6,4.7,4.5,4.7,4.6]},
+  {id:36,name:"Fatima Kamal",level:"senior 2",project:"Alpha",lead:4.7,srjr:4.8,kpi:4.6,final:4.7,tenure:36,status:"prom",leadC:[4.8,4.6,4.7,4.8,4.6],srjrC:[4.9,4.7,4.8,4.6,4.8,4.7]},
+  {id:37,name:"Mahmoud Zaki",level:"senior 2",project:"Beta",lead:4.3,srjr:4.4,kpi:4.2,final:4.3,tenure:28,status:"exc",leadC:[4.4,4.2,4.3,4.4,4.2],srjrC:[4.5,4.3,4.4,4.2,4.4,4.3]},
+  {id:38,name:"Amira Hassan",level:"senior 2",project:"Gamma",lead:3.9,srjr:4.0,kpi:3.8,final:3.9,tenure:22,status:"meet",leadC:[4.0,3.8,3.9,4.0,3.8],srjrC:[4.1,3.9,4.0,3.8,4.0,3.9]},
+  {id:39,name:"Ziad Abdallah",level:"senior 2",project:"Delta",lead:3.2,srjr:3.1,kpi:3.3,final:3.2,tenure:14,status:"imp",leadC:[3.3,3.1,3.2,3.1,3.3],srjrC:[3.2,3.0,3.1,3.3,3.1,3.0]},
+  {id:40,name:"Lobna Samy",level:"senior 2",project:"Alpha",lead:4.5,srjr:4.6,kpi:4.4,final:4.5,tenure:33,status:"prom",leadC:[4.6,4.4,4.5,4.6,4.4],srjrC:[4.7,4.5,4.6,4.4,4.6,4.5]},
+  {id:41,name:"Samir Badr",level:"senior 2",project:"Beta",lead:4.1,srjr:4.2,kpi:4.0,final:4.1,tenure:25,status:"exc",leadC:[4.2,4.0,4.1,4.2,4.0],srjrC:[4.3,4.1,4.2,4.0,4.2,4.1]},
+  {id:42,name:"Reem Farid",level:"senior 2",project:"Gamma",lead:null,srjr:null,kpi:null,final:null,tenure:11,status:"pen",leadC:[],srjrC:[]},
+  {id:43,name:"Mohamed Nour",level:"senior 2",project:"Delta",lead:3.6,srjr:3.7,kpi:3.5,final:3.6,tenure:18,status:"meet",leadC:[3.7,3.5,3.6,3.7,3.5],srjrC:[3.8,3.6,3.7,3.5,3.7,3.6]},
+  {id:44,name:"Amal Ezz",level:"senior 2",project:"Alpha",lead:4.4,srjr:4.5,kpi:4.3,final:4.4,tenure:30,status:"exc",leadC:[4.5,4.3,4.4,4.5,4.3],srjrC:[4.6,4.4,4.5,4.3,4.5,4.4]},
+  {id:45,name:"Samy Adly",level:"senior 2",project:"Beta",lead:3.8,srjr:3.9,kpi:3.7,final:3.8,tenure:20,status:"meet",leadC:[3.9,3.7,3.8,3.9,3.7],srjrC:[4.0,3.8,3.9,3.7,3.9,3.8]},
+  {id:46,name:"Dalia Omar",level:"associate expert",project:"Alpha",lead:4.9,srjr:4.8,kpi:4.9,final:4.9,tenure:48,status:"prom",leadC:[5.0,4.8,4.9,4.9,4.8],srjrC:[4.9,4.7,4.8,4.9,4.8,4.7]},
+  {id:47,name:"Wael Mahmoud",level:"associate expert",project:"Gamma",lead:4.5,srjr:4.6,kpi:4.4,final:4.5,tenure:40,status:"prom",leadC:[4.6,4.4,4.5,4.6,4.4],srjrC:[4.7,4.5,4.6,4.4,4.6,4.5]},
+  {id:48,name:"Alia Sherif",level:"associate expert",project:"Beta",lead:4.2,srjr:4.3,kpi:4.1,final:4.2,tenure:36,status:"exc",leadC:[4.3,4.1,4.2,4.3,4.1],srjrC:[4.4,4.2,4.3,4.1,4.3,4.2]},
+  {id:49,name:"Kamal Sedky",level:"associate expert",project:"Delta",lead:3.8,srjr:3.9,kpi:3.7,final:3.8,tenure:30,status:"meet",leadC:[3.9,3.7,3.8,3.9,3.7],srjrC:[4.0,3.8,3.9,3.7,3.9,3.8]},
+  {id:50,name:"Noura Adel",level:"associate expert",project:"Alpha",lead:null,srjr:null,kpi:null,final:null,tenure:28,status:"pen",leadC:[],srjrC:[]},
+  {id:51,name:"Taha El-Banna",level:"associate expert",project:"Beta",lead:4.0,srjr:4.1,kpi:3.9,final:4.0,tenure:32,status:"exc",leadC:[4.1,3.9,4.0,4.1,3.9],srjrC:[4.2,4.0,4.1,3.9,4.1,4.0]},
+  {id:52,name:"Heba Fouad",level:"associate expert",project:"Gamma",lead:3.5,srjr:3.6,kpi:3.4,final:3.5,tenure:26,status:"meet",leadC:[3.6,3.4,3.5,3.6,3.4],srjrC:[3.7,3.5,3.6,3.4,3.6,3.5]},
 ];
 const SAMPLE_DATA = JSON.parse(JSON.stringify(raw));
 const PERSISTED_DATA_KEY = 'evaldash-last-data';
@@ -980,10 +980,11 @@ const REV_STATUS = Object.fromEntries(Object.entries(STATUS).map(([k,v])=>[v,k])
 
 // Replaces BASE_LEVELS/REV_LEVELS with a code->label map read from an
 // uploaded workbook's "Levels" lookup sheet, so the code<->label mapping
-// used to interpret/export the Level column is driven by the file rather
-// than hardcoded, for datasets that use a different level taxonomy.
+// used to interpret/export the Level column is driven entirely by the file.
+// With no lookup sheet, BASE_LEVELS is empty and every level is just its own
+// raw text — there's no built-in taxonomy to fall back to.
 function applyLevelsLookup(map){
-  BASE_LEVELS = Object.keys(map).length ? map : {...DEFAULT_LEVELS};
+  BASE_LEVELS = map || {};
   REV_LEVELS = Object.fromEntries(Object.entries(BASE_LEVELS).map(([k,v])=>[v,k]));
 }
 
@@ -1129,8 +1130,6 @@ const FORMS_BLOCK_B_CATS=[
   {label:'Agile & delivery', cols:[74,75,80]},
   {label:'Stakeholder comm.', cols:[76,77,78,79,81,82]},
 ];
-const FORMS_LEVEL_PHRASES=[['Associate Expert','ae'],['Senior 2','s2'],['Senior 1','s1'],['Junior 2','j2'],['Junior 1','j1']];
-
 function isFormsExport(headers){ return headers.includes('Tester Name'); }
 
 function formsRatingNum(v){
@@ -1142,10 +1141,14 @@ function formsAvg(arr){
   const vals=arr.filter(v=>v!=null);
   return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
 }
+// No hardcoded phrase list — derives the level entirely from the cell text,
+// same treatment as the plain CSV/XLSX import path (rowsToMembers): strip a
+// trailing "(Project X)" annotation and treat a bare dash placeholder as blank.
 function formsParseLevel(text){
-  const t=String(text||'').trim();
-  const hit=FORMS_LEVEL_PHRASES.find(([label])=>t.startsWith(label));
-  return hit ? hit[1] : '';
+  const raw=String(text||'').trim();
+  let t=raw.replace(/\s*\([^)]*\)\s*$/,'').trim() || raw;
+  if(!t || /^[-–—]+$/.test(t)) return '';
+  return t.toLowerCase();
 }
 
 function parseFormsExport(headers, rows){
