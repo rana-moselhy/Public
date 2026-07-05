@@ -300,15 +300,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
   </div>
 
   <div class="sidebar-section">Levels</div>
-  <div class="level-tabs-side" id="sidebar-levels">
-    <button class="ltab active" onclick="setLevel('all',this)" data-level="all">All levels <span class="badge" id="cnt-all">60</span></button>
-    <button class="ltab" onclick="setLevel('j1',this)" data-level="j1">Junior 1 <span class="badge" id="cnt-j1">12</span></button>
-    <button class="ltab" onclick="setLevel('j2',this)" data-level="j2">Junior 2 <span class="badge" id="cnt-j2">8</span></button>
-    <button class="ltab" onclick="setLevel('s1',this)" data-level="s1">Senior 1 <span class="badge" id="cnt-s1">15</span></button>
-    <button class="ltab" onclick="setLevel('s2',this)" data-level="s2">Senior 2 <span class="badge" id="cnt-s2">10</span></button>
-    <button class="ltab" onclick="setLevel('ae',this)" data-level="ae">Associate Expert <span class="badge" id="cnt-ae">7</span></button>
-    <button class="ltab" onclick="setLevel('pen',this)" data-level="pen">Pending <span class="badge" id="cnt-pen">8</span></button>
-  </div>
+  <div class="level-tabs-side" id="sidebar-levels"></div>
 
   <div class="sidebar-footer">
     Software Testing Team<br>Total: 60 members · Q4 2025
@@ -626,6 +618,7 @@ let distChartInst = null;
 function getLevelData(){
   if(currentLevel==='all') return raw;
   if(currentLevel==='pen') return raw.filter(m=>m.status==='pen');
+  if(currentLevel==='__unspecified') return raw.filter(m=>!m.level && m.status!=='pen');
   return raw.filter(m=>m.level===currentLevel);
 }
 
@@ -649,12 +642,10 @@ function calcStats(data){
   return counts;
 }
 
-function setLevel(level, btn){
+function setLevel(level){
   currentLevel=level;
   currentMFilter='all';
-  document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  const label = level==='all'?'All levels':(level==='pen'?'Pending':(LEVELS[level]||level));
+  const label = level==='all'?'All levels':(level==='pen'?'Pending':(level==='__unspecified'?'Unspecified':(LEVELS[level]||(level.charAt(0).toUpperCase()+level.slice(1)))));
   document.getElementById('page-sub').textContent=label+' · Click any card or row for details';
   document.querySelectorAll('.fpill')[0].click();
   render();
@@ -716,13 +707,29 @@ function render(){
   renderDistChart(data);
   renderAreaBars(data);
   renderTable();
-  // update tab counts
-  const levelKeys=['all','j1','j2','s1','s2','ae','pen'];
-  levelKeys.forEach(k=>{
-    const cnt=k==='all'?raw.length:(k==='pen'?raw.filter(m=>m.status==='pen').length:raw.filter(m=>m.level===k).length);
-    const el=document.getElementById('cnt-'+k);
-    if(el) el.textContent=cnt;
-  });
+  renderLevelSidebar();
+}
+
+// Builds the sidebar Levels list from whatever level values are actually
+// present in the loaded data, rather than a fixed j1/j2/s1/s2/ae list, so
+// custom imports (different level names) still get a filter for each one.
+function renderLevelSidebar(){
+  const container=document.getElementById('sidebar-levels');
+  if(!container) return;
+  const esc=s=>String(s).replace(/'/g,"\\'");
+  const distinct=[...new Set(raw.map(m=>m.level).filter(l=>l))];
+  const known=Object.keys(LEVELS).filter(k=>distinct.includes(k));
+  const custom=distinct.filter(l=>!LEVELS[l]).sort((a,b)=>a.localeCompare(b));
+  const unspecifiedCount=raw.filter(m=>!m.level && m.status!=='pen').length;
+  const penCount=raw.filter(m=>m.status==='pen').length;
+
+  const tab=(key,label,count)=>`<button class="ltab${currentLevel===key?' active':''}" onclick="setLevel('${esc(key)}',this)" data-level="${key}">${label} <span class="badge" id="cnt-${key}">${count}</span></button>`;
+
+  let html=tab('all','All levels',raw.length);
+  html+=[...known,...custom].map(l=>tab(l, LEVELS[l]||(l.charAt(0).toUpperCase()+l.slice(1)), raw.filter(m=>m.level===l).length)).join('');
+  if(unspecifiedCount>0) html+=tab('__unspecified','Unspecified',unspecifiedCount);
+  html+=tab('pen','Pending',penCount);
+  container.innerHTML=html;
 }
 
 function renderDistChart(data){
@@ -1079,8 +1086,6 @@ function applyLoadedData(newData, sourceLabel){
   raw = newData;
   try{ localStorage.setItem(PERSISTED_DATA_KEY, JSON.stringify(newData)); }catch(e){}
   currentLevel='all'; currentMFilter='all';
-  document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active'));
-  document.querySelector('.ltab[data-level="all"]')?.classList.add('active');
   document.getElementById('page-sub').textContent='All levels · Click any card or row for details';
   document.querySelectorAll('.fpill').forEach((b,i)=>b.classList.toggle('active',i===0));
   render();
