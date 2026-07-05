@@ -491,7 +491,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
       <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Accepts .json (array of member records), .csv, or .xlsx/.xls (same columns as Export CSV). The loaded data is saved in this browser and reopens as the default next time.</div>
       <input type="file" id="data-file-input" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onchange="handleFileUpload(event)">
       <div id="publish-section" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-        <div style="font-size:12px;color:var(--text-3);margin-bottom:8px">The upload above only saved to <b>this browser</b>. To make it show up for anyone opening the site in any browser, publish it to the repo (needs a GitHub token with write access to this repo, entered here — it's used only for this request and never saved).</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:8px">The upload above only saved to <b>this browser</b>. To make it show up for anyone opening the site in any browser, publish it to the repo (needs a GitHub token with write access to this repo). The token is saved in this browser after a successful publish, so you won't need to re-enter it next time — <a href="#" onclick="forgetPublishToken();return false" style="color:var(--text-3)">forget saved token</a>.</div>
         <div style="display:flex;gap:8px">
           <input type="password" id="publish-token-input" placeholder="GitHub personal access token" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px" autocomplete="off">
           <button class="btn btn-accent" onclick="publishToGitHub()">Publish to website</button>
@@ -968,7 +968,7 @@ function toggleTheme(){
 (function initTheme(){
   let saved=null;
   try{ saved=localStorage.getItem('evaldash-theme'); }catch(e){}
-  if(!saved) saved=(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
+  if(!saved) saved='light';
   document.documentElement.setAttribute('data-theme',saved);
   const btn=document.getElementById('theme-toggle-btn');
   if(btn) btn.textContent = saved==='light' ? '☀️ Light' : '🌙 Dark';
@@ -1067,12 +1067,16 @@ function rowsToMembers(headers, rows){
     // (Project Mercury)" and "Associate Expert (Project Venus)" both count
     // toward the same "Associate Expert" level instead of splintering into
     // their own per-project pills.
-    const levelLabel=levelLabelRaw.replace(/\s*\([^)]*\)\s*$/,'').trim() || levelLabelRaw;
+    let levelLabel=levelLabelRaw.replace(/\s*\([^)]*\)\s*$/,'').trim() || levelLabelRaw;
+    // Excel cells often use a bare "-"/"–"/"—" as a placeholder for "not set
+    // yet" rather than a real level name — treat that as blank so it lands in
+    // "Unspecified" instead of becoming its own literal "-" pill.
+    if(/^[-–—]+$/.test(levelLabel)) levelLabel='';
     const statusLabel=String(cols[iStatus]??'');
     return {
       id:Number(cols[iId]),
       name:cols[iName],
-      level:REV_LEVELS[levelLabel] || (BASE_LEVELS[levelLabel]!==undefined ? levelLabel : levelLabel.toLowerCase()),
+      level:levelLabel ? (REV_LEVELS[levelLabel] || (BASE_LEVELS[levelLabel]!==undefined ? levelLabel : levelLabel.toLowerCase())) : '',
       project:String(cols[iProject]||'').replace(/^Project\s+/,''),
       lead:num(cols[iLead]), srjr:num(cols[iSrjr]), kpi:num(cols[iKpi]), final:num(cols[iFinal]),
       tenure:num(cols[iTenure])||0,
@@ -1263,6 +1267,10 @@ function handleFileUpload(evt){
         ext: isXLSX ? 'xlsx' : (isJSON ? 'json' : 'csv')
       };
       document.getElementById('publish-section').style.display='block';
+      try{
+        const savedToken=localStorage.getItem(PUBLISH_TOKEN_KEY);
+        if(savedToken) document.getElementById('publish-token-input').value=savedToken;
+      }catch(e){}
     }catch(err){
       showDataStatus('Could not load file: '+err.message, false);
     }
@@ -1272,6 +1280,7 @@ function handleFileUpload(evt){
   evt.target.value='';
 }
 
+const PUBLISH_TOKEN_KEY = 'evaldash-publish-token';
 const GITHUB_REPO_OWNER = 'rana-moselhy';
 const GITHUB_REPO_NAME = 'Public';
 const GITHUB_REPO_BRANCH = 'main';
@@ -1285,6 +1294,12 @@ function arrayBufferToBase64(buf){
     binary+=String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
   }
   return btoa(binary);
+}
+
+function forgetPublishToken(){
+  try{ localStorage.removeItem(PUBLISH_TOKEN_KEY); }catch(e){}
+  document.getElementById('publish-token-input').value='';
+  showDataStatus('Saved token forgotten.', true);
 }
 
 async function publishToGitHub(){
@@ -1318,7 +1333,7 @@ async function publishToGitHub(){
       if(putRes.status===404) throw new Error('Repo/branch not found — check GITHUB_REPO_OWNER/NAME/BRANCH match this repo.');
       throw new Error(body.message || ('Request failed with status '+putRes.status));
     }
-    document.getElementById('publish-token-input').value='';
+    try{ localStorage.setItem(PUBLISH_TOKEN_KEY, token); }catch(e){}
     showDataStatus('Published! Anyone opening the site will now see this data (may take a few seconds to propagate).', true);
   }catch(err){
     showDataStatus('Publish failed: '+err.message, false);
