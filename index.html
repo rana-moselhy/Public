@@ -479,6 +479,10 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
     <div class="drawer-meta">Load member data from a local file, or sync from a hosted JSON/CSV/Excel URL</div>
   </div>
   <div class="drawer-body">
+    <div id="data-current-source" style="display:none;margin-bottom:18px;padding:10px 12px;border-radius:8px;background:var(--card);border:1px solid var(--border);font-size:12px">
+      <div id="data-current-source-text" style="margin-bottom:8px"></div>
+      <button class="btn" onclick="exportCSV()">Export current data (CSV)</button>
+    </div>
     <div style="margin-bottom:18px">
       <div class="d-section-title">Upload from file</div>
       <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Accepts .json (array of member records), .csv, or .xlsx/.xls (same columns as Export CSV). The loaded data is saved in this browser and reopens as the default next time.</div>
@@ -648,12 +652,15 @@ let raw = [
 const SAMPLE_DATA = JSON.parse(JSON.stringify(raw));
 const PERSISTED_DATA_KEY = 'evaldash-last-data';
 const LAST_LOADED_KEY = 'evaldash-last-loaded-date';
+const LAST_SOURCE_KEY = 'evaldash-last-source';
 let lastLoadedDate = null;
+let lastSourceLabel = null;
 (function restorePersistedData(){
   try{
     const saved = localStorage.getItem(PERSISTED_DATA_KEY);
     if(saved){ const parsed = JSON.parse(saved); if(Array.isArray(parsed) && parsed.length) raw = parsed; }
     lastLoadedDate = localStorage.getItem(LAST_LOADED_KEY);
+    lastSourceLabel = localStorage.getItem(LAST_SOURCE_KEY);
   }catch(e){}
 })();
 
@@ -981,6 +988,13 @@ function openDataModal(){
   document.getElementById('data-overlay').classList.add('open');
   document.getElementById('data-modal').classList.add('open');
   document.getElementById('data-status').style.display='none';
+  const sourceBox=document.getElementById('data-current-source');
+  if(lastSourceLabel){
+    document.getElementById('data-current-source-text').innerHTML=`Currently loaded: <b>${lastSourceLabel}</b>${lastLoadedDate?' · uploaded '+lastLoadedDate:''}`;
+    sourceBox.style.display='block';
+  } else {
+    sourceBox.style.display='none';
+  }
 }
 function closeDataModal(){
   document.getElementById('data-overlay').classList.remove('open');
@@ -1189,9 +1203,11 @@ function applyLoadedData(newData, sourceLabel, persist=true){
   raw = newData;
   if(persist){
     lastLoadedDate = new Date().toISOString().slice(0,10);
+    lastSourceLabel = sourceLabel;
     try{
       localStorage.setItem(PERSISTED_DATA_KEY, JSON.stringify(newData));
       localStorage.setItem(LAST_LOADED_KEY, lastLoadedDate);
+      localStorage.setItem(LAST_SOURCE_KEY, sourceLabel);
     }catch(e){}
   }
   currentLevel='all'; currentMFilter='all';
