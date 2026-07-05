@@ -500,6 +500,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
     </div>
     <div id="data-status" style="font-size:12px;padding:10px 12px;border-radius:8px;display:none;margin-bottom:12px"></div>
     <button class="btn" onclick="resetToSampleData()">Reset to sample data</button>
+    <div style="font-size:11px;color:var(--text-3);margin-top:6px">This is just a temporary view — it won't overwrite your saved default upload.</div>
   </div>
 </div>
 
@@ -538,7 +539,19 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
 </script>
 
 <script>
-const LEVELS = {j1:"Junior 1",j2:"Junior 2",s1:"Senior 1",s2:"Senior 2",ae:"Associate Expert"};
+const BASE_LEVELS = {j1:"Junior 1",j2:"Junior 2",s1:"Senior 1",s2:"Senior 2",ae:"Associate Expert"};
+// LEVELS starts as the five known levels but is refreshed from whatever's
+// actually in `raw` (see refreshLevels), so any custom level value coming
+// from an uploaded file gets a real label everywhere LEVELS is looked up,
+// not just via the levelLabel() fallback below.
+let LEVELS = {...BASE_LEVELS};
+function refreshLevels(){
+  const merged = {...BASE_LEVELS};
+  raw.forEach(m=>{
+    if(m.level && !merged[m.level]) merged[m.level] = m.level.charAt(0).toUpperCase()+m.level.slice(1);
+  });
+  LEVELS = merged;
+}
 // Falls back to the raw level value from the uploaded file (title-cased) for
 // custom levels that aren't one of the five known keys above, instead of
 // hiding them behind a blank/dash.
@@ -715,6 +728,7 @@ function sortBy(key){
 }
 
 function render(){
+  refreshLevels();
   const data = getLevelData();
   const stats = calcStats(data);
   document.getElementById('kv-prom').textContent=stats.prom;
@@ -772,7 +786,7 @@ function renderLevelSidebar(){
 function renderDistChart(data){
   const ctx=document.getElementById('distChart');
   if(distChartInst) distChartInst.destroy();
-  const levels=currentLevel==='all'?['j1','j2','s1','s2','ae']:([currentLevel]==='pen'?[]:([currentLevel]));
+  const levels=currentLevel==='all'?Object.keys(LEVELS):((currentLevel==='pen'||currentLevel==='__unspecified')?[]:[currentLevel]);
   const labels=levels.map(l=>LEVELS[l]||l);
   const statusKeys=['prom','exc','meet','imp','pen'];
   const colors=['#a855f7','#22c55e','#3b82f6','#f59e0b','#475569'];
@@ -919,7 +933,7 @@ function toggleTheme(){
 })();
 
 // ── DATA SOURCE ──
-const REV_LEVELS = Object.fromEntries(Object.entries(LEVELS).map(([k,v])=>[v,k]));
+const REV_LEVELS = Object.fromEntries(Object.entries(BASE_LEVELS).map(([k,v])=>[v,k]));
 const REV_STATUS = Object.fromEntries(Object.entries(STATUS).map(([k,v])=>[v,k]));
 
 function openDataModal(){
@@ -1124,14 +1138,16 @@ function parseJSONData(text){
   }));
 }
 
-function applyLoadedData(newData, sourceLabel){
+function applyLoadedData(newData, sourceLabel, persist=true){
   if(!newData.length) throw new Error('No records found');
   raw = newData;
-  lastLoadedDate = new Date().toISOString().slice(0,10);
-  try{
-    localStorage.setItem(PERSISTED_DATA_KEY, JSON.stringify(newData));
-    localStorage.setItem(LAST_LOADED_KEY, lastLoadedDate);
-  }catch(e){}
+  if(persist){
+    lastLoadedDate = new Date().toISOString().slice(0,10);
+    try{
+      localStorage.setItem(PERSISTED_DATA_KEY, JSON.stringify(newData));
+      localStorage.setItem(LAST_LOADED_KEY, lastLoadedDate);
+    }catch(e){}
+  }
   currentLevel='all'; currentMFilter='all';
   document.getElementById('page-sub').textContent='All levels · Click any card or row for details';
   document.querySelectorAll('.fpill').forEach((b,i)=>b.classList.toggle('active',i===0));
@@ -1191,7 +1207,9 @@ async function loadRepoSnapshot(){
 }
 
 function resetToSampleData(){
-  applyLoadedData(JSON.parse(JSON.stringify(SAMPLE_DATA)), 'sample data');
+  // Not persisted: this is a temporary view, so it won't overwrite the last
+  // uploaded file that's saved as the default for next time.
+  applyLoadedData(JSON.parse(JSON.stringify(SAMPLE_DATA)), 'sample data', false);
 }
 
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeDetail(); closeDataModal(); } });
