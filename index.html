@@ -372,7 +372,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
           <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>High performer</div>
           <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>On track</div>
           <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Needs improvement</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#64748b"></div>Pending</div>
+          <div class="legend-item" style="display:none"><div class="legend-dot" style="background:#64748b"></div>Pending</div>
         </div>
       </div>
       <div class="card">
@@ -394,7 +394,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
         <div class="rec-card rc-meet" onclick="filterByStatus('meet')"><div class="rc-num" id="rc-meet">18</div><div class="rc-label">Meets expectations</div><div class="rc-sub">On track, developing</div></div>
         <div class="rec-card rc-imp" onclick="filterByStatus('imp')"><div class="rc-num" id="rc-imp">11</div><div class="rc-label">Needs improvement</div><div class="rc-sub">Assign training plan</div></div>
         <div class="rec-card rc-pip" onclick="filterByStatus('pip')"><div class="rc-num" id="rc-pip">0</div><div class="rc-label">PDP required</div><div class="rc-sub">Score below 2.5</div></div>
-        <div class="rec-card rc-pen" onclick="filterByStatus('pen')"><div class="rc-num" id="rc-pen">8</div><div class="rc-label">Pending evaluation</div><div class="rc-sub">Awaiting data input</div></div>
+        <div class="rec-card rc-pen" onclick="filterByStatus('pen')" style="display:none"><div class="rc-num" id="rc-pen">8</div><div class="rc-label">Pending evaluation</div><div class="rc-sub">Awaiting data input</div></div>
       </div>
     </div>
 
@@ -408,7 +408,7 @@ tbody tr.selected td{background:rgba(91,106,245,.08)}
           <button class="fpill" onclick="setMFilter('meet',this)">On track</button>
           <button class="fpill" onclick="setMFilter('imp',this)">Needs improvement</button>
           <button class="fpill" onclick="setMFilter('pip',this)">PDP</button>
-          <button class="fpill" onclick="setMFilter('pen',this)">Pending</button>
+          <button class="fpill" onclick="setMFilter('pen',this)" style="display:none">Pending</button>
         </div>
         <span id="sort-label" style="font-size:11px;color:var(--text-3)">Sort by: Final score ↓</span>
       </div>
@@ -806,7 +806,9 @@ function renderLevelSidebar(){
   let html=tab('all','All levels',raw.length);
   html+=[...known,...custom].map(l=>tab(l, levelLabel(l), raw.filter(m=>m.level===l).length)).join('');
   if(unspecifiedCount>0) html+=tab('__unspecified','Unspecified',unspecifiedCount);
-  html+=tab('pen','Pending',penCount);
+  // Pending level/status pills hidden for now — see the other display:none
+  // "pen"-related elements (rec-card, fpill, legend) for how to bring back.
+  // html+=tab('pen','Pending',penCount);
   container.innerHTML=html;
 }
 
