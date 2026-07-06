@@ -1315,22 +1315,35 @@ async function publishToGitHub(){
   const apiUrl=`https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${path}`;
   const authHeaders={ Authorization:`Bearer ${token}`, Accept:'application/vnd.github+json' };
   showDataStatus('Publishing…', true);
-  try{
-    let sha;
-    const existing=await fetch(`${apiUrl}?ref=${GITHUB_REPO_BRANCH}`, {headers:authHeaders});
-    if(existing.ok){ sha=(await existing.json()).sha; }
-    else if(existing.status!==404){ throw new Error('Could not check existing file (status '+existing.status+')'); }
 
-    const putRes=await fetch(apiUrl, {
-      method:'PUT',
-      headers:{...authHeaders, 'Content-Type':'application/json'},
-      body:JSON.stringify({
-        message:'Publish data update from dashboard',
-        content:arrayBufferToBase64(pendingPublishFile.buffer),
-        branch:GITHUB_REPO_BRANCH,
-        ...(sha?{sha}:{})
-      })
-    });
+  // cache:'no-store' is essential — a cached (stale) sha causes GitHub to
+  // reject the PUT with a "does not match <sha>" conflict if the file
+  // changed since the browser last cached this exact GET response.
+  const fetchSha=async()=>{
+    const res=await fetch(`${apiUrl}?ref=${GITHUB_REPO_BRANCH}`, {headers:authHeaders, cache:'no-store'});
+    if(res.ok) return (await res.json()).sha;
+    if(res.status===404) return undefined;
+    throw new Error('Could not check existing file (status '+res.status+')');
+  };
+  const putOnce=(sha)=>fetch(apiUrl, {
+    method:'PUT',
+    headers:{...authHeaders, 'Content-Type':'application/json'},
+    body:JSON.stringify({
+      message:'Publish data update from dashboard',
+      content:arrayBufferToBase64(pendingPublishFile.buffer),
+      branch:GITHUB_REPO_BRANCH,
+      ...(sha?{sha}:{})
+    })
+  });
+
+  try{
+    let putRes=await putOnce(await fetchSha());
+    // Someone else published in the moment between our sha check and this
+    // PUT (e.g. another tab, or the scheduled sync) — re-check and retry
+    // once with the now-current sha instead of failing outright.
+    if(putRes.status===409 || putRes.status===422){
+      putRes=await putOnce(await fetchSha());
+    }
     if(!putRes.ok){
       const body=await putRes.json().catch(()=>({}));
       if(putRes.status===401) throw new Error('Token was rejected — check it\'s valid and not expired.');
